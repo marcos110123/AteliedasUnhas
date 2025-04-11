@@ -352,12 +352,16 @@ modalLoginBtn.addEventListener("click", () => {
         });
 });
 
-// === Logout ===
 document.getElementById("logout-btn").addEventListener("click", () => {
     signOut(auth)
-        .then(() => alert("Você saiu!"))
+        .then(() => {
+            alert("Você saiu!");
+            // Redireciona para a página inicial do GitHub Pages
+            window.location.href = "/AteliedasUnhas/"; // ou index.html se estiver testando local
+        })
         .catch((error) => alert("Erro ao sair: " + error.message));
 });
+
 
 // === Estado de Autenticação ===
 onAuthStateChanged(auth, async (user) => {
