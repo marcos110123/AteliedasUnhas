@@ -235,22 +235,22 @@
         }
       });
 
-      // Lógica de logout
       document.addEventListener("DOMContentLoaded", () => {
-        const logoutAdminBtn = document.getElementById("logout-admin-btn");
-        if (logoutAdminBtn) {
-          logoutAdminBtn.addEventListener("click", () => {
-            signOut(auth)
-              .then(() => {
-                console.log("Usuário deslogado.");
-                window.location.href = "/";
-              })
-              .catch((error) => {
-                console.error("Erro ao sair:", error);
-                alert("Erro ao sair.");
-              });
-          });
-        }
+  const logoutAdminBtn = document.getElementById("logout-admin-btn");
+  if (logoutAdminBtn) {
+    logoutAdminBtn.addEventListener("click", () => {
+      signOut(auth)
+        .then(() => {
+          console.log("Usuário deslogado.");
+          window.location.href = "/AteliedasUnhas/";
+        })
+        .catch((error) => {
+          console.error("Erro ao sair:", error);
+          alert("Erro ao sair.");
+        });
+    });
+  }
+
 
         // Event listeners para os botões de salvar e cancelar edição
         if (salvarEdicaoBtn) {
