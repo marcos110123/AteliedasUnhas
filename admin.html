@@ -7,288 +7,291 @@
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
       import {
-       getAuth,
-       onAuthStateChanged,
-       signOut,
+        getAuth,
+        onAuthStateChanged,
+        signOut,
       } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
       import {
-       getFirestore,
-       collection,
-       query,
-       where,
-       getDocs,
-       onSnapshot,
-       doc,
-       updateDoc,
-       orderBy, // Importe a função orderBy
+        getFirestore,
+        collection,
+        query,
+        where,
+        getDocs,
+        onSnapshot,
+        doc,
+        updateDoc,
+        deleteDoc,
+        orderBy,
       } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
     
-      // Sua configuração do Firebase
       const firebaseConfig = {
-       apiKey: "AIzaSyD2abLi_zEjHPS0D8EvcDPYLIbOhQa68p8",
-       authDomain: "projeto3-9bb85.firebaseapp.com",
-       projectId: "projeto3-9bb85",
-       storageBucket: "projeto3-9bb85.firebasestorage.app",
-       messagingSenderId: "403757642546",
-       appId: "1:403757642546:web:b2093665bce9099b6fdd2b",
+        apiKey: "AIzaSyD2abLi_zEjHPS0D8EvcDPYLIbOhQa68p8",
+        authDomain: "projeto3-9bb85.firebaseapp.com",
+        projectId: "projeto3-9bb85",
+        storageBucket: "projeto3-9bb85.firebasestorage.app",
+        messagingSenderId: "403757642546",
+        appId: "1:403757642546:web:b2093665bce9099b6fdd2b",
       };
     
-      // Inicializa o Firebase
       const app = initializeApp(firebaseConfig);
       const auth = getAuth(app);
       const db = getFirestore(app);
     
-      // Elementos do DOM
       const adminContent = document.getElementById("admin-content");
       const accessDenied = document.getElementById("access-denied");
       const listaDeAgendamentosAdminDiv = document.getElementById(
-       "lista-de-agendamentos-admin"
+        "lista-de-agendamentos-admin"
       );
       const formularioEdicaoAgendamentoDiv = document.getElementById(
-       "formulario-edicao-agendamento"
+        "formulario-edicao-agendamento"
       );
       const formEditarAgendamento = document.getElementById(
-       "form-editar-agendamento"
+        "form-editar-agendamento"
       );
       const editarAgendamentoIdInput = document.getElementById(
-       "editar-agendamento-id"
+        "editar-agendamento-id"
       );
       const editarDataInput = document.getElementById("editar-data");
       const editarStatusSelect = document.getElementById("editar-status");
       const salvarEdicaoBtn = document.getElementById("salvar-edicao-btn");
       const cancelarEdicaoBtn = document.getElementById("cancelar-edicao-btn");
     
-      let agendamentosList = []; // Variável para armazenar a lista de agendamentos
+      let agendamentosList = [];
     
-      // Função para verificar a role do usuário
       async function verificarRoleAdmin(user) {
-       if (user) {
-        const userDocSnapshot = await getDocs(
-         query(collection(db, "users"), where("uid", "==", user.uid))
-        );
-        if (!userDocSnapshot.empty) {
-         const userData = userDocSnapshot.docs[0].data();
-         return userData.isAdmin === true; // Verifica o campo isAdmin
+        if (user) {
+          const userDocSnapshot = await getDocs(
+            query(collection(db, "users"), where("uid", "==", user.uid))
+          );
+          if (!userDocSnapshot.empty) {
+            const userData = userDocSnapshot.docs[0].data();
+            return userData.isAdmin === true;
+          }
         }
-       }
-       return false;
+        return false;
       }
     
-      // Função para exibir os agendamentos
       async function exibirAgendamentosAdmin(agendamentos) {
-       listaDeAgendamentosAdminDiv.innerHTML = ""; // Limpar a lista antes de exibir os agendamentos
+        listaDeAgendamentosAdminDiv.innerHTML = "";
     
-       if (agendamentos && Array.isArray(agendamentos) && agendamentos.length > 0) {
-        // Ordenar os agendamentos por data e hora
-        agendamentos.sort((a, b) => {
-         const dateA = new Date(a.data);
-         const dateB = new Date(b.data);
-         return dateA - dateB; // Ordena cronologicamente (do mais antigo para o mais recente)
-        });
-    
-        for (const agendamento of agendamentos) {
-         try {
-          // Recuperar os dados do usuário associado ao agendamento
-          const userDoc = await getDocs(
-           query(collection(db, "users"), where("uid", "==", agendamento.uid))
-          );
-    
-          let nomeUsuario = "Não encontrado";
-          let telefoneUsuario = "Não encontrado";
-    
-          if (!userDoc.empty) {
-           const userData = userDoc.docs[0].data();
-           nomeUsuario = userData.displayName || "Não informado";
-           telefoneUsuario = userData.phone || "Não informado";
-          }
-    
-          const dataAgendada = new Date(agendamento.data);
-          const dataFormatada = dataAgendada.toLocaleDateString("pt-BR", {
-           day: "2-digit",
-           month: "2-digit",
-           year: "numeric",
-           hour: "2-digit",
-           minute: "2-digit",
+        if (agendamentos && Array.isArray(agendamentos) && agendamentos.length > 0) {
+          agendamentos.sort((a, b) => {
+            const dateA = new Date(a.data);
+            const dateB = new Date(b.data);
+            return dateA - dateB;
           });
     
-          const servicos = Array.isArray(agendamento.servicos)
-           ? agendamento.servicos.join(", ")
-           : "Nenhum serviço selecionado";
+          for (const agendamento of agendamentos) {
+            try {
+              const userDoc = await getDocs(
+                query(collection(db, "users"), where("uid", "==", agendamento.uid))
+              );
     
-          const agendamentoDiv = document.createElement("div");
-          agendamentoDiv.classList.add("agendamento-item");
-          agendamentoDiv.innerHTML = `
-           <p><strong>Nome do Usuário:</strong> ${nomeUsuario}</p>
-           <p><strong>Telefone do Usuário:</strong> ${telefoneUsuario}</p>
-           <p><strong>Serviços:</strong> ${servicos}</p>
-           <p><strong>Data e Hora:</strong> ${dataFormatada}</p>
-           <button class="editar-agendamento-btn" data-id="${agendamento.id}">Editar</button>
-           <button class="whatsapp-btn"
-            data-nome="${nomeUsuario}"
-            data-telefone="${telefoneUsuario}"
-            data-servicos="${servicos}"
-            data-data="${dataFormatada}">
-            Enviar Confirmação por WhatsApp
-           </button>
-           <hr>
-          `;
-          listaDeAgendamentosAdminDiv.appendChild(agendamentoDiv);
-         } catch (error) {
-          console.error("Erro ao buscar dados do usuário:", error);
-         }
-        }
+              let nomeUsuario = "Não encontrado";
+              let telefoneUsuario = "Não encontrado";
     
-        // Adicionar os eventos de clique para os botões do WhatsApp
-        document.querySelectorAll(".whatsapp-btn").forEach((botao) => {
-         botao.addEventListener("click", () => {
-          const nome = botao.dataset.nome;
-          const telefone = botao.dataset.telefone.replace(/\D/g, ""); // Limpar caracteres não numéricos
-          const servicos = botao.dataset.servicos;
-          const data = botao.dataset.data;
+              if (!userDoc.empty) {
+                const userData = userDoc.docs[0].data();
+                nomeUsuario = userData.displayName || "Não informado";
+                telefoneUsuario = userData.phone || "Não informado";
+              }
     
-          const mensagem = `Olá ${nome}, tudo bem? 👋\n\n Seu agendamento em Ateliê das Unhas foi confirmado!\n📅 Data: ${data}\n💼 Serviços: ${servicos}\n\nQualquer dúvida, estamos à disposição.💅`;
-          const url = `https://wa.me/55${telefone}?text=${encodeURIComponent(mensagem)}`;
-          window.open(url, "_blank");
-          console.log(mensagem);  // Verifique se o emoji está na string
-         });
-        });
+              const dataAgendada = new Date(agendamento.data);
+              const dataFormatada = dataAgendada.toLocaleDateString("pt-BR", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              });
     
-        // Adicionar os eventos de clique para os botões de edição
-        document.querySelectorAll(".editar-agendamento-btn").forEach((botao) => {
-         botao.addEventListener("click", exibirFormularioEdicao);
-        });
+              const servicos = Array.isArray(agendamento.servicos)
+                ? agendamento.servicos.join(", ")
+                : "Nenhum serviço selecionado";
     
-       } else {
-        listaDeAgendamentosAdminDiv.innerHTML = "<p>Nenhum agendamento encontrado.</p>";
-       }
-      }
+              const agendamentoDiv = document.createElement("div");
+              agendamentoDiv.classList.add("agendamento-item");
+              agendamentoDiv.innerHTML = `
+                <p><strong>Nome do Usuário:</strong> ${nomeUsuario}</p>
+                <p><strong>Telefone do Usuário:</strong> ${telefoneUsuario}</p>
+                <p><strong>Serviços:</strong> ${servicos}</p>
+                <p><strong>Data e Hora:</strong> ${dataFormatada}</p>
+              `;
     
-      function exibirFormularioEdicao(event) {
-       const agendamentoId = event.target.dataset.id;
-       console.log("ID do agendamento clicado:", agendamentoId);
-       const agendamentoParaEditar = agendamentosList.find(
-        (agendamento) => agendamento.id === agendamentoId
-       );
-       console.log("Agendamento encontrado:", agendamentoParaEditar);
+              if (!agendamento.confirmacaoEnviada) {
+                agendamentoDiv.innerHTML += `
+                  <button class="whatsapp-btn"
+                    data-id="${agendamento.id}"
+                    data-nome="${nomeUsuario}"
+                    data-telefone="${telefoneUsuario}"
+                    data-servicos="${servicos}"
+                    data-data="${dataFormatada}">
+                    Enviar Confirmação por WhatsApp
+                  </button>
+                `;
+              } else {
+                agendamentoDiv.innerHTML += `<p>Confirmação já enviada.</p>`;
+              }
     
-       if (agendamentoParaEditar) {
-        formularioEdicaoAgendamentoDiv.style.display = "block";
-        formularioEdicaoAgendamentoDiv.style.position = "fixed";
-        formularioEdicaoAgendamentoDiv.style.top = "50%";
-        formularioEdicaoAgendamentoDiv.style.left = "50%";
-        formularioEdicaoAgendamentoDiv.style.transform =
-         "translate(-50%, -50%)";
-        formularioEdicaoAgendamentoDiv.style.border = "2px solid blue"; // Adicione uma borda para visualização
-        editarAgendamentoIdInput.value = agendamentoId;
-        editarDataInput.value = new Date(agendamentoParaEditar.data)
-         .toISOString()
-         .slice(0, 16);
-        editarStatusSelect.value = agendamentoParaEditar.status;
-       }
-      }
+              agendamentoDiv.innerHTML += `
+                <button class="editar-btn" data-id="${agendamento.id}" data-nome="${nomeUsuario}" data-servicos="${servicos}" data-data="${dataFormatada}">
+                  Editar
+                </button>
+                <button class="excluir-btn" data-id="${agendamento.id}">
+                  Excluir
+                </button>
+                <hr>
+              `;
     
-      async function salvarEdicaoAgendamento() {
-       const agendamentoId = editarAgendamentoIdInput.value;
-       const novaDataHora = editarDataInput.value;
-       const novoStatus = editarStatusSelect.value;
+              listaDeAgendamentosAdminDiv.appendChild(agendamentoDiv);
+            } catch (error) {
+              console.error("Erro ao buscar dados do usuário:", error);
+            }
+          }
     
-       if (agendamentoId) {
-        try {
-         const agendamentoRef = doc(db, "agendamentos", agendamentoId);
-         await updateDoc(agendamentoRef, {
-          data: new Date(novaDataHora).getTime(), // Salva como timestamp
-          status: novoStatus,
-         });
-         formularioEdicaoAgendamentoDiv.style.display = "none"; // Oculta o formulário após salvar
-         console.log(
-          `Agendamento com ID ${agendamentoId} atualizado com sucesso.`
-         );
-        } catch (error) {
-         console.error("Erro ao atualizar agendamento:", error);
-         alert("Erro ao atualizar o agendamento.");
-        }
-       }
-      }
+          // Lidar com o clique no botão de "Editar"
+          document.querySelectorAll(".editar-btn").forEach((botao) => {
+            botao.addEventListener("click", (event) => {
+              const agendamentoId = event.target.dataset.id;
+              const nome = event.target.dataset.nome;
+              const servicos = event.target.dataset.servicos;
+              const data = event.target.dataset.data;
     
-      // Listener para o estado de autenticação
-      onAuthStateChanged(auth, async (user) => {
-       if (user) {
-        const isAdmin = await verificarRoleAdmin(user);
-        if (isAdmin) {
-         adminContent.style.display = "block";
-         accessDenied.style.display = "none";
-         console.log("Acesso concedido: Administrador logado.");
+              editarAgendamentoIdInput.value = agendamentoId;
+              editarDataInput.value = new Date(data).toISOString().slice(0, 16);
+              editarStatusSelect.value = "pendente"; // Defina o status conforme a lógica do seu sistema
     
-         // Buscar e exibir os agendamentos de todos os usuários
-         const q = collection(db, "agendamentos");
-         onSnapshot(q, (querySnapshot) => {
-          agendamentosList = [];
-          querySnapshot.forEach((doc) =>
-           agendamentosList.push({ id: doc.id, ...doc.data() })
-          );
-          console.log("agendamentosList:", agendamentosList); // LOG ADICIONADO
-          exibirAgendamentosAdmin(agendamentosList);
-         });
+              formularioEdicaoAgendamentoDiv.style.display = "block";
+            });
+          });
+    
+          // Lidar com o clique no botão de "Excluir"
+          document.querySelectorAll(".excluir-btn").forEach((botao) => {
+            botao.addEventListener("click", async (event) => {
+              const agendamentoId = event.target.dataset.id;
+    
+              if (confirm("Tem certeza de que deseja excluir este agendamento?")) {
+                try {
+                  const agendamentoRef = doc(db, "agendamentos", agendamentoId);
+                  await deleteDoc(agendamentoRef); // Função para excluir o documento
+                  alert("Agendamento excluído com sucesso!");
+                } catch (error) {
+                  console.error("Erro ao excluir o agendamento:", error);
+                  alert("Erro ao excluir o agendamento.");
+                }
+              }
+            });
+          });
+    
+          // Botão do WhatsApp
+          document.querySelectorAll(".whatsapp-btn").forEach((botao) => {
+            botao.addEventListener("click", async () => {
+              const nome = botao.dataset.nome;
+              const telefone = botao.dataset.telefone.replace(/\D/g, "");
+              const servicos = botao.dataset.servicos;
+              const data = botao.dataset.data;
+              const agendamentoId = botao.dataset.id;
+    
+              const mensagem = `Olá ${nome}, tudo bem? 👋\n\n Seu agendamento em Ateliê das Unhas foi confirmado!\n📅 Data: ${data}\n💼 Serviços: ${servicos}\n\nQualquer dúvida, estamos à disposição.💅`;
+              const url = `https://wa.me/55${telefone}?text=${encodeURIComponent(mensagem)}`;
+              window.open(url, "_blank");
+    
+              try {
+                const agendamentoRef = doc(db, "agendamentos", agendamentoId);
+                await updateDoc(agendamentoRef, {
+                  confirmacaoEnviada: true,
+                });
+                console.log("Confirmação enviada com sucesso!");
+              } catch (error) {
+                console.error("Erro ao atualizar o status de confirmação:", error);
+              }
+            });
+          });
         } else {
-         adminContent.style.display = "none";
-         accessDenied.style.display = "block";
-         console.log("Acesso negado: Usuário não é administrador.");
+          listaDeAgendamentosAdminDiv.innerHTML = "<p>Nenhum agendamento encontrado.</p>";
         }
-       } else {
-        console.log(
-         "Acesso negado: Usuário não autenticado. Redirecionando para login."
-        );
-        window.location.href = "/index.html";
-       }
+      }
+    
+      onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          const isAdmin = await verificarRoleAdmin(user);
+          if (isAdmin) {
+            adminContent.style.display = "block";
+            accessDenied.style.display = "none";
+            const q = collection(db, "agendamentos");
+            onSnapshot(q, (querySnapshot) => {
+              agendamentosList = [];
+              querySnapshot.forEach((doc) =>
+                agendamentosList.push({ id: doc.id, ...doc.data() })
+              );
+              exibirAgendamentosAdmin(agendamentosList);
+            });
+          } else {
+            adminContent.style.display = "none";
+            accessDenied.style.display = "block";
+          }
+        } else {
+          window.location.href = "/index.html";
+        }
       });
     
       document.addEventListener("DOMContentLoaded", () => {
-       const logoutAdminBtn = document.getElementById("logout-admin-btn");
-       if (logoutAdminBtn) {
-        logoutAdminBtn.addEventListener("click", () => {
-         signOut(auth)
-          .then(() => {
-           console.log("Usuário deslogado.");
-           window.location.href = "/AteliedasUnhas/";
-          })
-          .catch((error) => {
-           console.error("Erro ao sair:", error);
-           alert("Erro ao sair.");
+        const logoutAdminBtn = document.getElementById("logout-admin-btn");
+        if (logoutAdminBtn) {
+          logoutAdminBtn.addEventListener("click", () => {
+            signOut(auth)
+              .then(() => {
+                window.location.href = "/AteliedasUnhas/";
+              })
+              .catch((error) => {
+                alert("Erro ao sair.");
+              });
           });
-        });
-       }
+        }
     
-       // Event listeners para os botões de salvar e cancelar edição
-       if (salvarEdicaoBtn) {
-        salvarEdicaoBtn.addEventListener("click", salvarEdicaoAgendamento);
-       }
-       if (cancelarEdicaoBtn) {
-        cancelarEdicaoBtn.addEventListener("click", () => {
-         formularioEdicaoAgendamentoDiv.style.display = "none"; // Oculta o formulário ao cancelar
-        });
-       }
+        if (salvarEdicaoBtn) {
+          salvarEdicaoBtn.addEventListener("click", async () => {
+            const agendamentoId = editarAgendamentoIdInput.value;
+            const novaDataHora = editarDataInput.value;
+            const novoStatus = editarStatusSelect.value;
+    
+            if (agendamentoId) {
+              try {
+                const agendamentoRef = doc(db, "agendamentos", agendamentoId);
+                await updateDoc(agendamentoRef, {
+                  data: new Date(novaDataHora).getTime(),
+                  status: novoStatus,
+                });
+                formularioEdicaoAgendamentoDiv.style.display = "none";
+              } catch (error) {
+                alert("Erro ao atualizar o agendamento.");
+              }
+            }
+          });
+        }
+    
+        if (cancelarEdicaoBtn) {
+          cancelarEdicaoBtn.addEventListener("click", () => {
+            formularioEdicaoAgendamentoDiv.style.display = "none";
+          });
+        }
       });
-     </script>
+    </script>
   </head>
   <body>
     <div id="admin-content">
       <h1>Painel de Administração</h1>
-      <p>Bem-vindo ao painel de administração!</p>
       <button id="logout-admin-btn">Logout</button>
-
       <h2>Agendamentos Realizados</h2>
       <div id="lista-de-agendamentos-admin"></div>
-
       <div id="formulario-edicao-agendamento">
         <h2>Editar Agendamento</h2>
         <form id="form-editar-agendamento">
           <input type="hidden" id="editar-agendamento-id" />
-
           <div>
             <label for="editar-data">Data e Hora:</label>
             <input type="datetime-local" id="editar-data" />
           </div>
-
           <div>
             <label for="editar-status">Status:</label>
             <select id="editar-status">
@@ -298,7 +301,6 @@
               <option value="concluido">Concluído</option>
             </select>
           </div>
-
           <button type="button" id="salvar-edicao-btn">Salvar Edição</button>
           <button type="button" id="cancelar-edicao-btn">Cancelar</button>
         </form>
@@ -307,7 +309,6 @@
     <div id="access-denied">
       <h2>Acesso Negado</h2>
       <p>Você não tem permissão para acessar esta página.</p>
-      <p>Você será redirecionado em breve...</p>
     </div>
   </body>
 </html>
