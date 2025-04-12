@@ -18,7 +18,17 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-
+const duracaoServicos = {
+    "Manicure - Pé e Mão": 120, // 2 horas = 120 minutos
+    "Manicure - Mão Simples": 60, // 1 hora = 60 minutos
+    "Pé Simples": 75, // 1 hora e 15 minutos = 75 minutos (corrigi o value do checkbox)
+    "ESMALTAÇÃO EM GEL C/ Cutilagem": 75, // 1 hora e 15 minutos = 75 minutos
+    "Esmaltação Mão": 75, // 1 hora e 15 minutos = 75 minutos
+    "Alongamento Speed Tip Gel": 75, // 1 hora e 15 minutos = 75 minutos
+    "PLÁSTICA DOS PÉS": 75, // 1 hora e 15 minutos = 75 minutos (duplicado na sua lista, mantive um)
+    "Aplicação Unha Postiça": 75, // 1 hora e 15 minutos = 75 minutos (duplicado na sua lista, mantive um)
+    "SPA DOS PÉS": 80, // 1 hora e 20 minutos = 80 minutos
+};
 // === Elementos do DOM ===
 const form = document.getElementById("agendamento-form");
 const authButtons = document.getElementById("auth-buttons");
@@ -98,16 +108,22 @@ document.addEventListener("keydown", (e) => {
 
 // === Seleção de Serviços ===
 let servicosSelecionadosArray = [];
+let duracaoTotalSelecionada = 0; // Variável para armazenar a duração total
 
 checkboxesServicos.forEach(checkbox => {
     checkbox.addEventListener('change', () => {
         const nomeServico = checkbox.value;
+        const duracao = duracaoServicos[nomeServico] || 60; // Duração padrão de 60 min se não encontrada
         if (checkbox.checked) {
             servicosSelecionadosArray.push(nomeServico);
+            duracaoTotalSelecionada += duracao;
         } else {
             servicosSelecionadosArray = servicosSelecionadosArray.filter(servico => servico !== nomeServico);
+            duracaoTotalSelecionada -= duracaoServicos[nomeServico] || 60;
         }
         botaoContinuarAgendamento.style.display = servicosSelecionadosArray.length > 0 ? 'block' : 'none';
+        console.log("Serviços selecionados:", servicosSelecionadosArray);
+        console.log("Duração total selecionada:", duracaoTotalSelecionada);
     });
 });
 
@@ -125,50 +141,58 @@ botaoContinuarAgendamento.addEventListener('click', () => {
 // === Função para Buscar Horários Agendados para uma Data ===
 async function buscarHorariosAgendadosParaData(data) {
     try {
-        // Define o intervalo de início e fim do dia
         const inicioDia = `${data}T00:00`;
         const fimDia = `${data}T23:59`;
 
-        // Consulta os agendamentos que estão dentro do intervalo de data do dia selecionado
         const q = query(
             collection(db, "agendamentos"),
-            where("data", ">=", inicioDia),   // Maior ou igual ao início do dia
-            where("data", "<=", fimDia),     // Menor ou igual ao fim do dia
-            where("status", "==", "pendente")   // Apenas pendentes
+            where("data", ">=", inicioDia),
+            where("data", "<=", fimDia),
+            where("status", "==", "pendente")
         );
 
-        // Realiza a consulta no Firestore
         const querySnapshot = await getDocs(q);
+        const horariosOcupados = new Set();
 
-        const horariosAgendados = new Set();
+        for (const doc of querySnapshot.docs) {
+            const agendamento = doc.data();
+            const dataInicioAgendamento = new Date(agendamento.data);
+            const servicosAgendados = agendamento.servicos;
+            let duracaoAgendamento = 0;
 
-        // Itera pelos documentos retornados
-        querySnapshot.forEach((doc) => {
-            const dataAgendada = doc.data().data;   // Pega a data agendada (ex: "2025-04-09T10:00")
-            const horaAgendada = dataAgendada.split("T")[1]?.slice(0, 5);   // Extrai a hora (ex: "10:00")
-            if (horaAgendada) {
-                horariosAgendados.add(horaAgendada);   // Adiciona a hora ao conjunto de horários agendados
+            servicosAgendados.forEach(servico => {
+                duracaoAgendamento += duracaoServicos[servico] || 60; // Obtém a duração do serviço
+            });
+
+            const inicio = new Date(dataInicioAgendamento);
+            const fim = new Date(inicio.getTime() + duracaoAgendamento * 60 * 1000); // Adiciona a duração em milissegundos
+
+            let currentTime = new Date(inicio);
+            while (currentTime < fim) {
+                const horaFormatada = String(currentTime.getHours()).padStart(2, '0');
+                const minutoFormatada = String(currentTime.getMinutes()).padStart(2, '0');
+                horariosOcupados.add(`${horaFormatada}:${minutoFormatada}`);
+                currentTime.setMinutes(currentTime.getMinutes() + 1); // Avança 1 minuto
             }
-        });
+        }
 
-        console.log("Horários ocupados para a data:", horariosAgendados);   // Depuração
-        return horariosAgendados;   // Retorna o Set com os horários ocupados
+        console.log("Horários ocupados para a data (detalhado):", horariosOcupados);
+        return horariosOcupados;
     } catch (error) {
         console.error("Erro ao buscar horários agendados:", error);
-        return new Set();   // Retorna um Set vazio em caso de erro
+        return new Set();
     }
 }
 
 // === Função para Exibir Horários Disponíveis ===
 async function exibirHorariosDisponiveis(horariosAgendados) {
-    horariosDisponiveisDiv.innerHTML = '';   // Limpa o conteúdo da div de horários
+    horariosDisponiveisDiv.innerHTML = '';
 
     const horariosPossiveis = [];
-    const horaInicio = 8;   // Início às 08:00
-    const horaFim = 17;     // Fim às 17:00
-    const intervaloMinutos = 60;   // Intervalo de 60 minutos
+    const horaInicio = 8;
+    const horaFim = 17;
+    const intervaloMinutos = 15; // Ajuste a granularidade conforme necessário
 
-    // Gera todos os horários possíveis entre 08:00 e 17:00
     for (let hora = horaInicio; hora < horaFim; hora++) {
         for (let minuto = 0; minuto < 60; minuto += intervaloMinutos) {
             const horaFormatada = String(hora).padStart(2, '0');
@@ -177,8 +201,7 @@ async function exibirHorariosDisponiveis(horariosAgendados) {
         }
     }
 
-    // Cria o select para mostrar os horários
-    if (horariosPossiveis.length > 0) {
+    if (horariosPossiveis.length > 0 && duracaoTotalSelecionada > 0) {
         const selectHorario = document.createElement('select');
         selectHorario.id = 'hora-agendamento';
         selectHorario.required = true;
@@ -188,19 +211,38 @@ async function exibirHorariosDisponiveis(horariosAgendados) {
         optionPadrao.textContent = '-- Selecione um horário --';
         selectHorario.appendChild(optionPadrao);
 
-        // Adiciona os horários possíveis ao select, mas apenas os que não estão agendados
-        horariosPossiveis.forEach(horaCompleta => {
-            // Verifica se o horário está no Set de horários agendados
-            if (!horariosAgendados.has(horaCompleta)) {
-                const dataHora = `${dataAgendamentoInput.value}T${horaCompleta.split(':')[0]}:${horaCompleta.split(':')[1]}:00`;
+        horariosPossiveis.forEach(horaInicioStr => {
+            const [h, m] = horaInicioStr.split(':').map(Number);
+            const inicioAgendamento = new Date(dataAgendamentoInput.value);
+            inicioAgendamento.setHours(h);
+            inicioAgendamento.setMinutes(m);
+            inicioAgendamento.setSeconds(0);
+            inicioAgendamento.setMilliseconds(0);
+
+            const fimAgendamento = new Date(inicioAgendamento.getTime() + duracaoTotalSelecionada * 60 * 1000);
+
+            let horarioLivre = true;
+            let currentTime = new Date(inicioAgendamento);
+
+            while (currentTime < fimAgendamento) {
+                const horaAtualFormatada = String(currentTime.getHours()).padStart(2, '0');
+                const minutoAtualFormatada = String(currentTime.getMinutes()).padStart(2, '0');
+                if (horariosAgendados.has(`${horaAtualFormatada}:${minutoAtualFormatada}`)) {
+                    horarioLivre = false;
+                    break;
+                }
+                currentTime.setMinutes(currentTime.getMinutes() + 1);
+            }
+
+            if (horarioLivre) {
+                const dataHora = `${dataAgendamentoInput.value}T${horaInicioStr}:00`;
                 const option = document.createElement('option');
                 option.value = dataHora;
-                option.textContent = horaCompleta;
+                option.textContent = horaInicioStr;
                 selectHorario.appendChild(option);
             }
         });
 
-        // Se houver horários disponíveis, adiciona o select ao DOM
         if (selectHorario.options.length > 1) {
             const labelHorario = document.createElement('label');
             labelHorario.setAttribute('for', 'hora-agendamento');
@@ -208,8 +250,10 @@ async function exibirHorariosDisponiveis(horariosAgendados) {
             horariosDisponiveisDiv.appendChild(labelHorario);
             horariosDisponiveisDiv.appendChild(selectHorario);
         } else {
-            horariosDisponiveisDiv.innerHTML = '<p>Não há horários disponíveis para esta data.</p>';
+            horariosDisponiveisDiv.innerHTML = '<p>Não há horários disponíveis para a duração dos serviços selecionados nesta data.</p>';
         }
+    } else if (servicosSelecionadosArray.length === 0) {
+        horariosDisponiveisDiv.innerHTML = '<p>Selecione os serviços para ver os horários disponíveis.</p>';
     } else {
         horariosDisponiveisDiv.innerHTML = '<p>Não há horários disponíveis.</p>';
     }
@@ -434,4 +478,3 @@ function exibirAgendamentos(agendamentos) {
 document.getElementById("back-to-top").addEventListener("click", () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
 });
-
