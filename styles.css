@@ -900,7 +900,14 @@ footer {
     .logo-container {
         margin-bottom: 10px;
     }
-
+    .logo-container img {
+        height: 150px;
+        width: 150px;
+        border-radius: 50%;
+        border: 1px solid #ddd;
+        display: block;
+        margin-top: 10px;
+    }
     .nav-bar ul {
         flex-direction: column;
         text-align: center;
@@ -926,9 +933,9 @@ footer {
     .social-links {
         display: flex;
         justify-content: center;
-        gap: 10px;
-        padding: 10px 0;
-        margin-top: 10px;
+        gap: 0px;
+        padding: 0px 0;
+        margin-top: 0px;
         transform: none;
         flex-wrap: wrap;
     }
