@@ -3,7 +3,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
 import { Timestamp,getFirestore, collection, addDoc, serverTimestamp, query, where, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
-
+// Inicialize o EmailJS com o seu User ID
+emailjs.init("xlsoL46EksEyS0eq8"); // Substitua com o seu User ID
 // === Firebase Config ===
 const firebaseConfig = {
     apiKey: "AIzaSyD2abLi_zEjHPS0D8EvcDPYLIbOhQa68p8",
@@ -29,6 +30,8 @@ const duracaoServicos = {
     "Aplicação Unha Postiça": 75, // 1 hora e 15 minutos = 75 minutos (duplicado na sua lista, mantive um)
     "SPA DOS PÉS": 80, // 1 hora e 20 minutos = 80 minutos
 };
+
+
 // === Elementos do DOM ===
 const form = document.getElementById("agendamento-form");
 const authButtons = document.getElementById("auth-buttons");
@@ -128,15 +131,28 @@ checkboxesServicos.forEach(checkbox => {
 });
 
 botaoContinuarAgendamento.addEventListener('click', () => {
-    if (auth.currentUser && servicosSelecionadosArray.length > 0) {
+    if (auth.currentUser && (servicosSelecionadosArray.length > 0 )) {
         secaoServicosListados.style.display = 'none';
         secaoAgendamento.style.display = 'block';
-        divServicosSelecionados.innerHTML = `<h3>Serviços Selecionados:</h3><ul>${servicosSelecionadosArray.map(s => `<li>${s}</li>`).join("")}</ul>`;
+
+        
+
+        const servicosHTML = servicosSelecionadosArray.length > 0
+            ? `<h4>Serviços Selecionados:</h4><ul>${servicosSelecionadosArray.map(s => `<li>${s}</li>`).join("")}</ul>`
+            : '';
+
+        divServicosSelecionados.innerHTML = `
+            <h3>Resumo da Seleção:</h3>
+
+            ${servicosHTML}
+        `;
+
         secaoAgendamento.scrollIntoView({ behavior: 'smooth' });
     } else {
-        alert(auth.currentUser ? 'Selecione pelo menos um serviço para continuar.' : 'Para agendar, você precisa estar logado.');
+        alert(auth.currentUser ? 'Selecione ao menos um serviço ou pacote.' : 'Você precisa estar logado para agendar.');
     }
 });
+
 
 // === Função para Buscar Horários Agendados para uma Data ===
 async function buscarHorariosAgendadosParaData(data) {
@@ -270,6 +286,7 @@ dataAgendamentoInput.addEventListener('change', async (event) => {
     } else {
         horariosDisponiveisDiv.innerHTML = '';   // Limpa os horários quando não houver data selecionada
     }
+    
 });
 
 // === Agendamento - Submit do Formulário ===
@@ -279,22 +296,28 @@ form.addEventListener("submit", async (e) => {
     const dataHoraCompleta = document.getElementById("hora-agendamento")?.value;
     const user = auth.currentUser;
 
-    // Verifica se o usuário está logado, se há serviços selecionados e se a data/hora foi escolhida
-    if (user && servicosSelecionadosArray.length > 0 && dataHoraCompleta) {
-        const dataAgendamento = dataHoraCompleta.split('T')[0];   // Data sem hora
-        const horaAgendamento = dataHoraCompleta.split('T')[1]?.slice(0, 5);   // Hora no formato HH:MM
+    const duracaoTotalAgendada = duracaoTotalSelecionada;
+if (user && (servicosSelecionadosArray.length > 0 ) && dataHoraCompleta) {
+
+        const dataAgendamento = dataHoraCompleta.split('T')[0];
+        const horaAgendamento = dataHoraCompleta.split('T')[1]?.slice(0, 5);
+        const hoje = new Date();
+        const dataSelecionada = new Date(dataAgendamentoInput.value);
+
+        if (dataSelecionada < hoje.setHours(0, 0, 0, 0)) {
+            alert("Você não pode agendar para uma data passada.");
+            return;
+        }
 
         try {
-            // Verifica se já existe um agendamento para a data e hora selecionadas
             const q = query(
                 collection(db, "agendamentos"),
-                where("data", "==", dataAgendamento + "T" + horaAgendamento + ":00"), // Comparação precisa de HH:MM:SS
+                where("data", "==", dataAgendamento + "T" + horaAgendamento + ":00"),
                 where("status", "==", "pendente")
             );
             const querySnapshot = await getDocs(q);
 
             if (querySnapshot.empty) {
-                // Se não houver conflito, adiciona o novo agendamento
                 await addDoc(collection(db, "agendamentos"), {
                     uid: user.uid,
                     servicos: servicosSelecionadosArray,
@@ -302,29 +325,35 @@ form.addEventListener("submit", async (e) => {
                     status: "pendente",
                     createdAt: serverTimestamp(),
                 });
+                
+
+                // ✅ Envia o e-mail de confirmação aqui
+                enviarEmailConfirmacao(user, servicosSelecionadosArray, dataAgendamento, horaAgendamento);
+
                 alert("Seu agendamento foi realizado com sucesso para os serviços selecionados!");
 
-                // Limpa os dados e redireciona o usuário
+                // Limpa os dados e reseta interface
+               // Limpa os dados e reseta interface
                 servicosSelecionadosArray = [];
                 secaoAgendamento.style.display = 'none';
                 secaoServicosListados.style.display = 'block';
                 checkboxesServicos.forEach(cb => cb.checked = false);
                 botaoContinuarAgendamento.style.display = 'none';
-                horariosDisponiveisDiv.innerHTML = '';
+                horariosDisponiveisDiv.innerHTML = ''
+            ;
+
             } else {
-                // Se o horário já estiver ocupado, informa o usuário
                 alert("O horário selecionado já está ocupado. Por favor, escolha outro horário.");
             }
         } catch (error) {
-            // Tratamento de erro mais detalhado
             console.error("Erro ao agendar: ", error);
             alert("Houve um erro ao tentar realizar o agendamento. Por favor, tente novamente mais tarde.");
         }
     } else {
-        // Se não tiver um usuário logado ou falta alguma informação
         alert(auth.currentUser ? 'Selecione uma data e horário e pelo menos um serviço para agendar.' : 'Para agendar, você precisa estar logado.');
     }
 });
+
 
 // === Registro ===
 registerBtn.addEventListener("click", () => {
@@ -478,3 +507,31 @@ function exibirAgendamentos(agendamentos) {
 document.getElementById("back-to-top").addEventListener("click", () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
 });
+
+
+// === EmailJS Setup ===
+
+
+// === Função para Enviar E-mail ===
+function enviarEmailConfirmacao(usuario, servicosSelecionados, data, horario = []) {
+    const emailParams = {
+        to_email: usuario.email,
+        user_name: usuario.displayName,
+        servicos: servicosSelecionados.join(", "),
+        data_agendamento: data,
+        horario_agendamento: horario,
+    };
+
+    emailjs.send('service_e1vy49h', 'template_em25s54', emailParams)
+    .then((response) => {
+        console.log('E-mail enviado com sucesso:', response);
+        alert('E-mail enviado com sucesso!');
+    })
+    .catch((error) => {
+        console.error('Erro ao enviar e-mail:', error);
+        alert('Erro ao enviar e-mail. Veja o console para detalhes.');
+    });
+}
+
+
+    

@@ -1227,4 +1227,87 @@ footer {
     }
 
     /* Outros ajustes de espaçamento e tamanho de fonte */
-}
+}/* Formulário de Criar Pacote */
+form#form-pacote-agendamento {
+    margin-top: 30px;
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  form#form-pacote-agendamento label {
+    font-size: 16px;
+    color: #444;
+  }
+  
+  form#form-pacote-agendamento select,
+  form#form-pacote-agendamento input {
+    margin-bottom: 15px;
+    font-size: 16px;
+  }
+  
+  #lista-datas-pacote {
+    margin-top: 10px;
+    list-style-type: disc;
+    margin-left: 20px;
+  }
+  
+  #lista-datas-pacote li {
+    margin-bottom: 10px;
+  }
+  
+  #lista-datas-pacote button {
+    background-color: #f44336;
+  }
+  
+  #lista-datas-pacote button:hover {
+    background-color: #e53935;
+  }
+  
+  #mensagem-pacote {
+    font-weight: bold;
+    color: green;
+    margin-top: 20px;
+  }
+  
+  /* Estilos Responsivos */
+  @media (max-width: 768px) {
+    #admin-content {
+      padding: 20px;
+    }
+  
+    form#form-pacote-agendamento {
+      padding: 15px;
+    }
+  
+    button {
+      width: 100%;
+      margin-bottom: 10px;
+    }
+  
+    input, select {
+      width: 100%;
+    }
+  
+    #lista-datas-pacote {
+      margin-left: 0;
+    }
+  }
+  .campo-horario {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  
+  .campo-horario input {
+    flex: 1;
+  }
+  
+  .campo-horario button {
+    font-size: 16px;
+    padding: 4px 8px;
+    cursor: pointer;
+  }
+  
