@@ -3,7 +3,7 @@
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Painel de Administração</title>
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles2.css" />
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
         import {
@@ -41,7 +41,7 @@
         const adminContent = document.getElementById("admin-content");
         const accessDenied = document.getElementById("access-denied");
         const listaDeAgendamentosAdminDiv = document.getElementById("lista-de-agendamentos-admin");
-        const formularioEdicaoAgendamentoDiv = document.getElementById("formulario-edicao-agendamento");
+        const modalEdicao = document.getElementById("modal-edicao");
         const formEditarAgendamento = document.getElementById("form-editar-agendamento");
         const editarAgendamentoIdInput = document.getElementById("editar-agendamento-id");
         const editarDataInput = document.getElementById("editar-data");
@@ -49,6 +49,7 @@
         const editarStatusSelect = document.getElementById("editar-status");
         const salvarEdicaoBtn = document.getElementById("salvar-edicao-btn");
         const cancelarEdicaoBtn = document.getElementById("cancelar-edicao-btn");
+        const closeButtonEdicao = document.getElementById("close-button-edicao");
         const formularioNovoAgendamentoDiv = document.getElementById("formulario-novo-agendamento");
         const formNovoAgendamento = document.getElementById("form-novo-agendamento");
 
@@ -326,7 +327,7 @@
                         container.innerHTML = "";
                         container.appendChild(criarCampoHorario());
 
-                        formularioEdicaoAgendamentoDiv.style.display = "block";
+                        modalEdicao.style.display = "block";
                     });
                 });
 
@@ -476,7 +477,7 @@
             const agendamentosNaData = await buscarAgendamentosPorData(dataSelecionada);
             const horariosDisponiveis = gerarHorariosDisponiveis(dataSelecionada, agendamentosNaData, agendamentoIdAtual, duracaoTotal);
 
-            const horarioSelect = document.getElementById("novo-horario");
+            const horarioSelect = document.getElementById("editar-horario");
             horarioSelect.innerHTML = '<option value="">Selecione um horário</option>';
             horariosDisponiveis.forEach(horario => {
                 const option = document.createElement("option");
@@ -622,7 +623,7 @@
                         }
 
                         alert("Agendamento atualizado com sucesso!");
-                        formularioEdicaoAgendamentoDiv.style.display = "none";
+                        modalEdicao.style.display = "none";
                     } catch (error) {
                         console.error("Erro ao salvar agendamento:", error);
                         alert("Erro ao salvar o agendamento.");
@@ -632,9 +633,22 @@
 
             if (cancelarEdicaoBtn) {
                 cancelarEdicaoBtn.addEventListener("click", () => {
-                    formularioEdicaoAgendamentoDiv.style.display = "none";
+                    modalEdicao.style.display = "none";
                 });
             }
+
+            if (closeButtonEdicao) {
+                closeButtonEdicao.addEventListener("click", () => {
+                    modalEdicao.style.display = "none";
+                });
+            }
+
+            // Fechar modal ao clicar fora do conteúdo
+            window.addEventListener("click", (event) => {
+                if (event.target === modalEdicao) {
+                    modalEdicao.style.display = "none";
+                }
+            });
 
             const novoDataInput = document.getElementById("novo-data");
             if (novoDataInput) {
@@ -809,35 +823,40 @@
             <button type="button" id="cancelar-novo-btn">Cancelar</button>
         </form>
     </div>
+</div>
 
-    <div id="formulario-edicao-agendamento" style="display: none;">
-        <h2>Editar Agendamento</h2>
-        <form id="form-editar-agendamento">
-            <input type="hidden" id="editar-agendamento-id" />
-            <div style="margin-bottom: 20px;">
-                <label for="editar-data" style="font-weight: bold;">📅 Data do Agendamento:</label><br />
-                <input type="date" id="editar-data" style="margin-top: 5px;" required />
-            </div>
-            <div style="margin-bottom: 20px;">
-                <label for="editar-horario" style="font-weight: bold;">🕒 Horário Disponível:</label><br />
-                <select id="editar-horario" style="margin-top: 5px; padding: 5px;" required>
-                    <option value="">Selecione uma data primeiro</option>
-                </select>
-            </div>
-            <div style="margin-bottom: 20px;">
-                <label style="font-weight: bold;">➕ Adicionar Novos Horários para Pacotes:</label>
-                <div id="novos-horarios-container" style="margin-top: 10px;"></div>
-            </div>
-            <div>
-                <label for="editar-status">Status:</label>
-                <select id="editar-status">
-                    <option value="pendente">Pendente</option>
-                    <option value="confirmado">Confirmado</option>
-                </select>
-            </div>
-            <button type="button" id="salvar-edicao-btn">Salvar Edição</button>
-            <button type="button" id="cancelar-edicao-btn">Cancelar</button>
-        </form>
+<div id="modal-edicao" class="modal-edicao">
+    <div class="modal-content-edicao">
+        <span id="close-button-edicao" class="close-button-edicao">&times;</span>
+        <div id="formulario-edicao-agendamento">
+            <h3>Editar Agendamento</h3>
+            <form id="form-editar-agendamento">
+                <input type="hidden" id="editar-agendamento-id" />
+                <div style="margin-bottom: 20px;">
+                    <label for="editar-data" style="font-weight: bold;">📅 Data do Agendamento:</label><br />
+                    <input type="date" id="editar-data" style="margin-top: 5px;" required />
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <label for="editar-horario" style="font-weight: bold;">🕒 Horário Disponível:</label><br />
+                    <select id="editar-horario" style="margin-top: 5px; padding: 5px;" required>
+                        <option value="">Selecione uma data primeiro</option>
+                    </select>
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <label style="font-weight: bold;">➕ Adicionar Novos Horários para Pacotes:</label>
+                    <div id="novos-horarios-container" style="margin-top: 10px;"></div>
+                </div>
+                <div>
+                    <label for="editar-status">Status:</label>
+                    <select id="editar-status">
+                        <option value="pendente">Pendente</option>
+                        <option value="confirmado">Confirmado</option>
+                    </select>
+                </div>
+                <button type="button" id="salvar-edicao-btn">Salvar Edição</button>
+                <button type="button" id="cancelar-edicao-btn">Cancelar</button>
+            </form>
+        </div>
     </div>
 </div>
 
@@ -847,5 +866,6 @@
     <p><a href="/index.html">Voltar para a página inicial</a></p>
 </div>
 <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9330e1833c7fc006',t:'MTc0NTExMjY3My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9335d3be7d5cbfed',t:'MTc0NTE2NDUzOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
 </body>
 </html>
