@@ -34,29 +34,6 @@
             appId: "1:403757642546:web:b2093665bce9099b6fdd2b",
         };
 
-        function criarCampoHorario(valor = "") {
-    const container = document.createElement("div");
-    container.classList.add("campo-horario");
-
-    container.innerHTML = `
-        <input type="datetime-local" class="novo-horario" value="${valor}" required />
-        <button type="button" class="adicionar-horario-abaixo">➕</button>
-        <button type="button" class="remover-horario-btn">🗑️</button>
-    `;
-
-    container.querySelector(".adicionar-horario-abaixo").addEventListener("click", () => {
-        const novo = criarCampoHorario();
-        container.insertAdjacentElement("afterend", novo);
-    });
-
-    container.querySelector(".remover-horario-btn").addEventListener("click", () => {
-        container.remove();
-    });
-
-    return container;
-}
-
-
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
@@ -76,12 +53,98 @@
             "editar-agendamento-id"
         );
         const editarDataInput = document.getElementById("editar-data");
+        const editarHorarioSelect = document.getElementById("editar-horario");
         const editarStatusSelect = document.getElementById("editar-status");
         const salvarEdicaoBtn = document.getElementById("salvar-edicao-btn");
         const cancelarEdicaoBtn = document.getElementById("cancelar-edicao-btn");
 
         let agendamentosList = [];
         let usuariosList = [];
+
+        // Mapeamento de durações dos serviços (em minutos)
+        const duracaoServicos = {
+            "Manicure - Pé e Mão": 120,
+            "Manicure - Mão Simples": 60,
+            "Pé Simples": 75,
+            "ESMALTAÇÃO EM GEL C/ Cutilagem": 75,
+            "Esmaltação Mão": 75,
+            "Alongamento Speed Tip Gel": 75,
+            "PLÁSTICA DOS PÉS": 75,
+            "Aplicação Unha Postiça": 75,
+            "SPA DOS PÉS": 80
+        };
+
+        function criarCampoHorario(data = "", horario = "") {
+            const container = document.createElement("div");
+            container.classList.add("campo-horario");
+
+            const uniqueId = `novo-horario-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+            container.innerHTML = `
+                <div style="display: flex; gap: 10px; align-items: flex-end;">
+                    <div>
+                        <label for="novo-data-${uniqueId}">Data:</label>
+                        <input type="date" class="novo-data" id="novo-data-${uniqueId}" value="${data}" required />
+                    </div>
+                    <div>
+                        <label for="novo-horario-${uniqueId}">Horário:</label>
+                        <select class="novo-horario" id="novo-horario-${uniqueId}" required>
+                            <option value="">Selecione uma data primeiro</option>
+                        </select>
+                    </div>
+                    <button type="button" class="adicionar-horario-abaixo">➕</button>
+                    <button type="button" class="remover-horario-btn">🗑️</button>
+                </div>
+            `;
+
+            const dataInput = container.querySelector(`#novo-data-${uniqueId}`);
+            const horarioSelect = container.querySelector(`#novo-horario-${uniqueId}`);
+
+            dataInput.addEventListener("change", async () => {
+                const dataSelecionada = dataInput.value;
+                if (dataSelecionada) {
+                    const agendamentosNaData = await buscarAgendamentosPorData(dataSelecionada);
+                    const horariosDisponiveis = gerarHorariosDisponiveis(dataSelecionada, agendamentosNaData, editarAgendamentoIdInput.value);
+
+                    horarioSelect.innerHTML = '<option value="">Selecione um horário</option>';
+                    horariosDisponiveis.forEach(horario => {
+                        const option = document.createElement("option");
+                        option.value = horario;
+                        option.textContent = horario;
+                        horarioSelect.appendChild(option);
+                    });
+
+                    if (horariosDisponiveis.length === 0) {
+                        horarioSelect.innerHTML = '<option value="">Nenhum horário disponível</option>';
+                        horarioSelect.disabled = true;
+                    } else {
+                        horarioSelect.disabled = false;
+                    }
+                } else {
+                    horarioSelect.innerHTML = '<option value="">Selecione uma data primeiro</option>';
+                    horarioSelect.disabled = true;
+                }
+            });
+
+            // Preencher horários disponíveis se uma data já estiver definida
+            if (data) {
+                dataInput.dispatchEvent(new Event("change"));
+                if (horario) {
+                    horarioSelect.value = horario;
+                }
+            }
+
+            container.querySelector(".adicionar-horario-abaixo").addEventListener("click", () => {
+                const novo = criarCampoHorario();
+                container.insertAdjacentElement("afterend", novo);
+            });
+
+            container.querySelector(".remover-horario-btn").addEventListener("click", () => {
+                container.remove();
+            });
+
+            return container;
+        }
 
         async function verificarRoleAdmin(user) {
             if (user) {
@@ -96,17 +159,62 @@
             return false;
         }
 
-        async function exibirAgendamentosAdmin(agendamentos) {
+        async function exibirAgendamentosAdmin(agendamentos, filtros = {}) {
             listaDeAgendamentosAdminDiv.innerHTML = "";
 
-            if (agendamentos && Array.isArray(agendamentos) && agendamentos.length > 0) {
-                agendamentos.sort((a, b) => {
+            // Aplicar filtros
+            let agendamentosFiltrados = [...agendamentos];
+
+            // Filtro por intervalo de datas (apenas dia)
+            if (filtros.dataInicio || filtros.dataFim) {
+                const dataInicio = filtros.dataInicio
+                    ? new Date(filtros.dataInicio)
+                    : new Date(-8640000000000000); // Data mínima
+                dataInicio.setHours(0, 0, 0, 0);
+                const dataFim = filtros.dataFim
+                    ? new Date(filtros.dataFim)
+                    : new Date(8640000000000000); // Data máxima
+                dataFim.setHours(23, 59, 59, 999);
+
+                agendamentosFiltrados = agendamentosFiltrados.filter((agendamento) => {
+                    const dataAgendamento = new Date(agendamento.data);
+                    return dataAgendamento >= dataInicio && dataAgendamento <= dataFim;
+                });
+            }
+
+            // Filtro por nome do usuário
+            if (filtros.nome) {
+                const nomeLower = filtros.nome.toLowerCase();
+                const agendamentosComNomes = await Promise.all(
+                    agendamentosFiltrados.map(async (agendamento) => {
+                        try {
+                            const userDoc = await getDocs(
+                                query(collection(db, "users"), where("uid", "==", agendamento.uid))
+                            );
+                            const nomeUsuario = userDoc.empty
+                                ? ""
+                                : userDoc.docs[0].data().displayName || "";
+                            return { ...agendamento, nomeUsuario };
+                        } catch (error) {
+                            console.error("Erro ao buscar nome do usuário:", error);
+                            return { ...agendamento, nomeUsuario: "" };
+                        }
+                    })
+                );
+
+                agendamentosFiltrados = agendamentosComNomes.filter((agendamento) =>
+                    agendamento.nomeUsuario.toLowerCase().includes(nomeLower)
+                );
+            }
+
+            if (agendamentosFiltrados.length > 0) {
+                agendamentosFiltrados.sort((a, b) => {
                     const dateA = new Date(a.data);
                     const dateB = new Date(b.data);
                     return dateA - dateB;
                 });
 
-                for (const agendamento of agendamentos) {
+                for (const agendamento of agendamentosFiltrados) {
                     try {
                         const userDoc = await getDocs(
                             query(collection(db, "users"), where("uid", "==", agendamento.uid))
@@ -159,12 +267,12 @@
                         }
 
                         agendamentoDiv.innerHTML += `
-                          <button class="editar-btn"
-                            data-id="${agendamento.id}"
-                            data-nome="${nomeUsuario}"
-                            data-servicos='${JSON.stringify(agendamento.servicos)}'
-                            data-data-real="${agendamento.data}">
-                             Editar
+                            <button class="editar-btn"
+                                data-id="${agendamento.id}"
+                                data-nome="${nomeUsuario}"
+                                data-servicos='${JSON.stringify(agendamento.servicos)}'
+                                data-data-real="${agendamento.data}">
+                                Editar
                             </button>
                             <button class="excluir-btn" data-id="${agendamento.id}">
                                 Excluir
@@ -179,41 +287,45 @@
                 }
 
                 document.querySelectorAll(".editar-btn").forEach((botao) => {
-    botao.addEventListener("click", (event) => {
-        const agendamentoId = event.target.dataset.id;
-        const data = event.target.dataset.data;
+                    botao.addEventListener("click", async (event) => {
+                        const agendamentoId = event.target.dataset.id;
+                        const timestamp = parseInt(event.target.dataset.dataReal, 10);
+                        const dataObj = new Date(timestamp);
 
-        function converterData(dataStr) {
-            const [dataParte, horaParte] = dataStr.split(", ");
-            const [dia, mes, ano] = dataParte.split("/");
-            return `${ano}-${mes}-${dia}T${horaParte}:00`;
-        }
+                        if (isNaN(dataObj.getTime())) {
+                            console.error("Data inválida:", timestamp);
+                            return;
+                        }
 
-        const timestamp = parseInt(event.target.dataset.dataReal, 10);
-        const dataObj = new Date(timestamp);
+                        editarAgendamentoIdInput.value = agendamentoId;
+                        editarDataInput.value = dataObj.toISOString().slice(0, 10);
+                        editarStatusSelect.value = "pendente";
 
-        if (isNaN(dataObj.getTime())) {
-            console.error("Data inválida:", data);
-            return;
-        }
+                        // Extrair o horário original exato
+                        const horaOriginal = `${dataObj.getHours().toString().padStart(2, '0')}:${dataObj.getMinutes().toString().padStart(2, '0')}`;
 
-        editarAgendamentoIdInput.value = agendamentoId;
-        editarDataInput.value = dataObj.toISOString().slice(0, 16);
-        editarStatusSelect.value = "pendente";
+                        // Atualizar horários disponíveis, garantindo que o horário original esteja incluído
+                        await atualizarHorariosDisponiveis(dataObj, agendamentoId);
+                        editarHorarioSelect.value = horaOriginal;
 
-        // Limpa os horários adicionais
-        const container = document.getElementById("novos-horarios-container");
-        container.innerHTML = "";
-        container.appendChild(criarCampoHorario());
+                        // Verificar se o horário original foi selecionado corretamente
+                        if (!editarHorarioSelect.value) {
+                            // Se o horário original não estiver na lista, adicioná-lo manualmente
+                            const option = document.createElement("option");
+                            option.value = horaOriginal;
+                            option.textContent = horaOriginal;
+                            editarHorarioSelect.appendChild(option);
+                            editarHorarioSelect.value = horaOriginal;
+                        }
 
-        formularioEdicaoAgendamentoDiv.style.display = "block";
-    });
-});
+                        const container = document.getElementById("novos-horarios-container");
+                        container.innerHTML = "";
+                        container.appendChild(criarCampoHorario());
 
+                        formularioEdicaoAgendamentoDiv.style.display = "block";
+                    });
+                });
 
-             
-
-                // Lidar com o clique no botão de "Excluir"
                 document.querySelectorAll(".excluir-btn").forEach((botao) => {
                     botao.addEventListener("click", async (event) => {
                         const agendamentoId = event.target.dataset.id;
@@ -221,7 +333,7 @@
                         if (confirm("Tem certeza de que deseja excluir este agendamento?")) {
                             try {
                                 const agendamentoRef = doc(db, "agendamentos", agendamentoId);
-                                await deleteDoc(agendamentoRef); // Função para excluir o documento
+                                await deleteDoc(agendamentoRef);
                                 alert("Agendamento excluído com sucesso!");
                             } catch (error) {
                                 console.error("Erro ao excluir o agendamento:", error);
@@ -231,7 +343,6 @@
                     });
                 });
 
-                // Botão do WhatsApp
                 document.querySelectorAll(".whatsapp-btn").forEach((botao) => {
                     botao.addEventListener("click", async () => {
                         const nome = botao.dataset.nome;
@@ -256,7 +367,7 @@
                     });
                 });
             } else {
-                listaDeAgendamentosAdminDiv.innerHTML = "<p>Nenhum agendamento encontrado.</p>";
+                listaDeAgendamentosAdminDiv.innerHTML = "<p>Nenhum agendamento encontrado com os filtros aplicados.</p>";
             }
         }
 
@@ -276,22 +387,19 @@
             const querySnapshot = await getDocs(q);
             const agendamentosNaData = [];
             querySnapshot.forEach((doc) => {
-                agendamentosNaData.push(doc.data().data); // Assumindo que 'data' é um timestamp
+                agendamentosNaData.push({ id: doc.id, ...doc.data() });
             });
             return agendamentosNaData;
         }
 
-        function gerarHorariosDisponiveis(dataSelecionada, agendamentosNaData) {
-            const horariosFuncionamentoInicio = 9; // Exemplo: 9h (ajuste conforme necessário)
-            const horariosFuncionamentoFim = 18;   // Exemplo: 18h (ajuste conforme necessário)
+        function gerarHorariosDisponiveis(dataSelecionada, agendamentosNaData, agendamentoIdAtual) {
+            const horariosFuncionamentoInicio = 8; // 8h
+            const horariosFuncionamentoFim = 17;  // 17h
             const intervaloAgendamentoMinutos = 30;
             const horariosPossiveis = [];
-            const horariosOcupados = agendamentosNaData.map(timestamp => {
-                const data = new Date(timestamp);
-                return `${data.getHours().toString().padStart(2, '0')}:${data.getMinutes().toString().padStart(2, '0')}`;
-            });
-            const horariosDisponiveis = [];
+            const horariosOcupados = new Set();
 
+            // Gerar todos os horários possíveis (8:00 a 16:30, em intervalos de 30 minutos)
             for (let hora = horariosFuncionamentoInicio; hora < horariosFuncionamentoFim; hora++) {
                 for (let minuto = 0; minuto < 60; minuto += intervaloAgendamentoMinutos) {
                     const horario = `${hora.toString().padStart(2, '0')}:${minuto.toString().padStart(2, '0')}`;
@@ -299,13 +407,78 @@
                 }
             }
 
-            horariosPossiveis.forEach(horario => {
-                if (!horariosOcupados.includes(horario)) {
-                    horariosDisponiveis.push(horario);
-                }
-            });
+            // Encontrar o horário original do agendamento atual
+            let horarioOriginal = null;
+            const agendamentoAtual = agendamentosNaData.find(ag => ag.id === agendamentoIdAtual);
+            if (agendamentoAtual) {
+                const dataOriginal = new Date(agendamentoAtual.data);
+                horarioOriginal = `${dataOriginal.getHours().toString().padStart(2, '0')}:${dataOriginal.getMinutes().toString().padStart(2, '0')}`;
+            }
+
+            // Calcular horários ocupados com base na duração dos serviços
+            agendamentosNaData
+                .filter(agendamento => agendamento.id !== agendamentoIdAtual)
+                .forEach(agendamento => {
+                    const inicio = new Date(agendamento.data);
+                    const horaInicio = inicio.getHours();
+                    const minutoInicio = inicio.getMinutes();
+
+                    // Calcular duração total do agendamento
+                    let duracaoTotal = 0;
+                    if (Array.isArray(agendamento.servicos)) {
+                        agendamento.servicos.forEach(servico => {
+                            duracaoTotal += duracaoServicos[servico] || 30; // 30 minutos como padrão se serviço não for encontrado
+                        });
+                    } else {
+                        duracaoTotal = 30; // Duração padrão se não houver serviços
+                    }
+
+                    // Calcular o número de slots de 30 minutos necessários
+                    const slotsNecessarios = Math.ceil(duracaoTotal / intervaloAgendamentoMinutos);
+
+                    // Bloquear todos os slots de 30 minutos dentro do intervalo
+                    for (let slot = 0; slot < slotsNecessarios; slot++) {
+                        const minutosOffset = minutoInicio + (slot * intervaloAgendamentoMinutos);
+                        const horaSlot = horaInicio + Math.floor(minutosOffset / 60);
+                        const minutoSlot = minutosOffset % 60;
+                        if (horaSlot < horariosFuncionamentoFim) {
+                            const horarioOcupado = `${horaSlot.toString().padStart(2, '0')}:${minutoSlot.toString().padStart(2, '0')}`;
+                            horariosOcupados.add(horarioOcupado);
+                        }
+                    }
+                });
+
+            // Filtrar horários disponíveis, garantindo que o horário original esteja incluído
+            let horariosDisponiveis = horariosPossiveis.filter(horario => !horariosOcupados.has(horario));
+            if (horarioOriginal && !horariosDisponiveis.includes(horarioOriginal)) {
+                horariosDisponiveis.push(horarioOriginal);
+                horariosDisponiveis.sort(); // Ordenar para manter a sequência correta
+            }
 
             return horariosDisponiveis;
+        }
+
+        async function atualizarHorariosDisponiveis(dataSelecionada, agendamentoIdAtual) {
+            const agendamentosNaData = await buscarAgendamentosPorData(dataSelecionada);
+            const horariosDisponiveis = gerarHorariosDisponiveis(dataSelecionada, agendamentosNaData, agendamentoIdAtual);
+
+            editarHorarioSelect.innerHTML = '<option value="">Selecione um horário</option>';
+            horariosDisponiveis.forEach(horario => {
+                const option = document.createElement("option");
+                option.value = horario;
+                option.textContent = horario;
+                editarHorarioSelect.appendChild(option);
+            });
+
+            if (horariosDisponiveis.length === 0) {
+                const option = document.createElement("option");
+                option.value = "";
+                option.textContent = "Nenhum horário disponível";
+                editarHorarioSelect.appendChild(option);
+                editarHorarioSelect.disabled = true;
+            } else {
+                editarHorarioSelect.disabled = false;
+            }
         }
 
         onAuthStateChanged(auth, async (user) => {
@@ -345,141 +518,176 @@
                 });
             }
 
-            // Função para criar campo de horário com botões ➕ e 🗑️
-            function criarCampoHorario(valor = "") {
-    const container = document.createElement("div");
-    container.classList.add("campo-horario");
+            const aplicarFiltroBtn = document.getElementById("aplicar-filtro-btn");
+            const limparFiltroBtn = document.getElementById("limpar-filtro-btn");
 
-    container.innerHTML = `
-        <input type="datetime-local" class="novo-horario" value="${valor}" required />
-        <button type="button" class="adicionar-horario-abaixo">➕</button>
-        <button type="button" class="remover-horario-btn">🗑️</button>
-    `;
+            if (aplicarFiltroBtn) {
+                aplicarFiltroBtn.addEventListener("click", () => {
+                    const dataInicio = document.getElementById("filtro-data-inicio").value;
+                    const dataFim = document.getElementById("filtro-data-fim").value;
+                    const nome = document.getElementById("filtro-nome").value.trim();
 
-    // Botão ➕
-    container.querySelector(".adicionar-horario-abaixo").addEventListener("click", () => {
-        const novo = criarCampoHorario();
-        container.insertAdjacentElement("afterend", novo);
-    });
+                    const filtros = {};
+                    if (dataInicio) filtros.dataInicio = dataInicio;
+                    if (dataFim) filtros.dataFim = dataFim;
+                    if (nome) filtros.nome = nome;
 
-    // Botão 🗑️
-    container.querySelector(".remover-horario-btn").addEventListener("click", () => {
-        container.remove();
-    });
+                    exibirAgendamentosAdmin(agendamentosList, filtros);
+                });
+            }
 
-    return container;
-}
+            if (limparFiltroBtn) {
+                limparFiltroBtn.addEventListener("click", () => {
+                    document.getElementById("filtro-data-inicio").value = "";
+                    document.getElementById("filtro-data-fim").value = "";
+                    document.getElementById("filtro-nome").value = "";
+                    exibirAgendamentosAdmin(agendamentosList);
+                });
+            }
 
-// Salvar vários agendamentos com diferentes datas
-if (salvarEdicaoBtn) {
-    salvarEdicaoBtn.addEventListener("click", async () => {
-    const agendamentoId = editarAgendamentoIdInput.value;
-    const novaData = new Date(editarDataInput.value).getTime();
-    const novoStatus = editarStatusSelect.value;
+            // Atualizar horários disponíveis quando a data mudar
+            if (editarDataInput) {
+                editarDataInput.addEventListener("change", async () => {
+                    const dataSelecionada = editarDataInput.value;
+                    if (dataSelecionada) {
+                        await atualizarHorariosDisponiveis(new Date(dataSelecionada), editarAgendamentoIdInput.value);
+                    } else {
+                        editarHorarioSelect.innerHTML = '<option value="">Selecione uma data primeiro</option>';
+                        editarHorarioSelect.disabled = true;
+                    }
+                });
+            }
 
-    const novosHorarios = [];
-    document.querySelectorAll(".novo-horario").forEach(input => {
-        const timestamp = new Date(input.value).getTime();
-        if (!isNaN(timestamp)) {
-            novosHorarios.push(timestamp);
-        }
-    });
+            if (salvarEdicaoBtn) {
+                salvarEdicaoBtn.addEventListener("click", async () => {
+                    const agendamentoId = editarAgendamentoIdInput.value;
+                    const dataSelecionada = editarDataInput.value;
+                    const horarioSelecionado = editarHorarioSelect.value;
+                    const novoStatus = editarStatusSelect.value;
 
-    try {
-        const agendamentoOriginal = agendamentosList.find(ag => ag.id === agendamentoId);
-        if (!agendamentoOriginal) throw new Error("Agendamento original não encontrado.");
+                    if (!dataSelecionada || !horarioSelecionado) {
+                        alert("Por favor, selecione uma data e um horário para o agendamento principal.");
+                        return;
+                    }
 
-        // Atualiza o agendamento principal com a nova data/status
-        const agendamentoRef = doc(db, "agendamentos", agendamentoId);
-        await updateDoc(agendamentoRef, {
-            data: novaData,
-            status: novoStatus,
+                    const [hora, minuto] = horarioSelecionado.split(":");
+                    const novaData = new Date(dataSelecionada);
+                    novaData.setHours(parseInt(hora), parseInt(minuto), 0, 0);
+
+                    const novosHorarios = [];
+                    const horarioContainers = document.querySelectorAll(".campo-horario");
+                    for (const container of horarioContainers) {
+                        const dataInput = container.querySelector(".novo-data").value;
+                        const horarioSelect = container.querySelector(".novo-horario").value;
+
+                        if (dataInput && horarioSelect) {
+                            const [hora, minuto] = horarioSelect.split(":");
+                            const dataHorario = new Date(dataInput);
+                            dataHorario.setHours(parseInt(hora), parseInt(minuto), 0, 0);
+                            novosHorarios.push(dataHorario.getTime());
+                        }
+                    }
+
+                    try {
+                        const agendamentoOriginal = agendamentosList.find(ag => ag.id === agendamentoId);
+                        if (!agendamentoOriginal) throw new Error("Agendamento original não encontrado.");
+
+                        const agendamentoRef = doc(db, "agendamentos", agendamentoId);
+                        await updateDoc(agendamentoRef, {
+                            data: novaData.getTime(),
+                            status: novoStatus,
+                        });
+
+                        for (const horario of novosHorarios) {
+                            await addDoc(collection(db, "agendamentos"), {
+                                data: horario,
+                                status: novoStatus,
+                                confirmacaoEnviada: false,
+                                servicos: agendamentoOriginal.servicos || [],
+                                uid: agendamentoOriginal.uid || "",
+                                createdAt: new Date().getTime(),
+                            });
+                        }
+
+                        alert("Agendamento atualizado com sucesso!");
+                        formularioEdicaoAgendamentoDiv.style.display = "none";
+                    } catch (error) {
+                        console.error("Erro ao salvar agendamento:", error);
+                        alert("Erro ao salvar o agendamento.");
+                    }
+                });
+            }
+
+            if (cancelarEdicaoBtn) {
+                cancelarEdicaoBtn.addEventListener("click", () => {
+                    formularioEdicaoAgendamentoDiv.style.display = "none";
+                });
+            }
         });
-
-        // Cria novos agendamentos para os horários adicionais
-        for (const horario of novosHorarios) {
-            await addDoc(collection(db, "agendamentos"), {
-                data: horario,
-                status: novoStatus,
-                confirmacaoEnviada: false,
-                servicos: agendamentoOriginal.servicos || [],
-                uid: agendamentoOriginal.uid || "",
-                createdAt: new Date().getTime(),
-            });
-        }
-
-        alert("Agendamento atualizado com sucesso!");
-        formularioEdicaoAgendamentoDiv.style.display = "none";
-    } catch (error) {
-        console.error("Erro ao salvar agendamento:", error);
-        alert("Erro ao salvar o agendamento.");
-    }
-});
-
-}
-
-// Cancelar edição
-if (cancelarEdicaoBtn) {
-    cancelarEdicaoBtn.addEventListener("click", () => {
-        formularioEdicaoAgendamentoDiv.style.display = "none";
-    });
-}
-
-
-      
-});
-</script>
+    </script>
 </head>
 <body>
 <div id="admin-content" style="display: none;">
-<h1>Painel de Administração</h1>
-<button id="logout-admin-btn">Sair</button>
+    <h1>Painel de Administração</h1>
+    <button id="logout-admin-btn">Sair</button>
 
-<h2>Lista de Agendamentos</h2>
-<div id="lista-de-agendamentos-admin">
-</div>
+    <h2>Lista de Agendamentos</h2>
+    <div id="filtro-agendamentos">
+        <h3>Filtrar Agendamentos</h3>
+        <form id="form-filtro-agendamentos">
+            <div>
+                <label for="filtro-data-inicio">Data Início:</label>
+                <input type="date" id="filtro-data-inicio" />
+            </div>
+            <div>
+                <label for="filtro-data-fim">Data Fim:</label>
+                <input type="date" id="filtro-data-fim" />
+            </div>
+            <div>
+                <label for="filtro-nome">Nome do Usuário:</label>
+                <input type="text" id="filtro-nome" placeholder="Digite o nome" />
+            </div>
+            <button type="button" id="aplicar-filtro-btn">Aplicar Filtro</button>
+            <button type="button" id="limpar-filtro-btn">Limpar Filtro</button>
+        </form>
+    </div>
+    <div id="lista-de-agendamentos-admin"></div>
 
-<div id="formulario-edicao-agendamento" style="display: none;">
-    <h2>Editar Agendamento</h2>
-    <form id="form-editar-agendamento">
-      <input type="hidden" id="editar-agendamento-id" />
-  
-      <div style="margin-bottom: 40px;">
-        <label for="editar-data" style="font-weight: bold;">📌 Horário Atual do Agendamento (pode editar):</label><br />
-        <input type="datetime-local" id="editar-data" style="margin-top: 5px;" required />
-      </div>
-      
-      <div style="margin-bottom: 20px;">
-        <label style="font-weight: bold;">➕ Adicionar Novos Horários para Pacotes:</label>
-        <div id="novos-horarios-container" style="margin-top: 10px;">
-          <!-- Novos campos são adicionados aqui -->
-        </div>
-      </div>
-
-      <div>
-        <label for="editar-status">Status:</label>
-        <select id="editar-status">
-          
-          <option value="confirmado">Confirmado</option>
-        </select>
-      </div>
-  
-     
-      
-      
-  
-      <button type="button" id="salvar-edicao-btn">Salvar Edição</button>
-      <button type="button" id="cancelar-edicao-btn">Cancelar</button>
-    </form>
-  </div>
-  
-
+    <div id="formulario-edicao-agendamento" style="display: none;">
+        <h2>Editar Agendamento</h2>
+        <form id="form-editar-agendamento">
+            <input type="hidden" id="editar-agendamento-id" />
+            <div style="margin-bottom: 20px;">
+                <label for="editar-data" style="font-weight: bold;">📅 Data do Agendamento:</label><br />
+                <input type="date" id="editar-data" style="margin-top: 5px;" required />
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label for="editar-horario" style="font-weight: bold;">🕒 Horário Disponível:</label><br />
+                <select id="editar-horario" style="margin-top: 5px; padding: 5px;" required>
+                    <option value="">Selecione uma data primeiro</option>
+                </select>
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label style="font-weight: bold;">➕ Adicionar Novos Horários para Pacotes:</label>
+                <div id="novos-horarios-container" style="margin-top: 10px;"></div>
+            </div>
+            <div>
+                <label for="editar-status">Status:</label>
+                <select id="editar-status">
+                    <option value="pendente">Pendente</option>
+                    <option value="confirmado">Confirmado</option>
+                </select>
+            </div>
+            <button type="button" id="salvar-edicao-btn">Salvar Edição</button>
+            <button type="button" id="cancelar-edicao-btn">Cancelar</button>
+        </form>
+    </div>
 </div>
 
 <div id="access-denied" style="display: none;">
-<h1>Acesso Negado</h1>
-<p>Você não tem permissão para acessar esta página.</p>
-<p><a href="/index.html">Voltar para a página inicial</a></p>
+    <h1>Acesso Negado</h1>
+    <p>Você não tem permissão para acessar esta página.</p>
+    <p><a href="/index.html">Voltar para a página inicial</a></p>
 </div>
 </body>
 </html>
