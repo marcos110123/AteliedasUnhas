@@ -1,6 +1,6 @@
 // === Firebase Imports ===
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
 import { Timestamp, getFirestore, collection, addDoc, serverTimestamp, query, where, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
 
 // Inicialize o EmailJS com o seu User ID
@@ -72,6 +72,14 @@ const modalLoginBtn = document.getElementById("modal-login-btn");
 const modalLoginEmailInput = document.getElementById("login-modal-email");
 const modalLoginPasswordInput = document.getElementById("login-modal-password");
 const loginErrorMessage = document.getElementById("login-error-message");
+
+// === Modal de Recuperar Senha ===
+const forgotPasswordModal = document.getElementById("forgot-password-modal");
+const forgotPasswordLink = document.getElementById("forgot-password-link");
+const closeForgotPasswordModalBtn = document.getElementById("close-forgot-password-modal");
+const modalForgotPasswordBtn = document.getElementById("modal-forgot-password-btn");
+const modalForgotPasswordEmailInput = document.getElementById("forgot-password-email");
+const forgotPasswordMessage = document.getElementById("forgot-password-message");
 
 // === Modal Informações ===
 document.getElementById("abrir-informacoes").addEventListener("click", (e) => {
@@ -565,6 +573,65 @@ modalLoginBtn.addEventListener("click", () => {
         .catch((error) => {
             loginErrorMessage.textContent = "Erro no login: " + error.message;
             loginErrorMessage.style.display = "block";
+        });
+});
+
+// === Recuperar Senha ===
+// Abrir modal de recuperação de senha
+forgotPasswordLink.addEventListener("click", (e) => {
+    e.preventDefault();
+    loginModal.style.display = "none"; // Fechar modal de login
+    forgotPasswordModal.style.display = "block";
+    forgotPasswordMessage.style.display = "none";
+    modalForgotPasswordEmailInput.value = "";
+});
+
+// Fechar modal de recuperação de senha
+closeForgotPasswordModalBtn.addEventListener("click", () => {
+    forgotPasswordModal.style.display = "none";
+});
+
+// Fechar modal clicando fora
+window.addEventListener("click", (event) => {
+    if (event.target === forgotPasswordModal) {
+        forgotPasswordModal.style.display = "none";
+    }
+});
+
+// Enviar e-mail de redefinição de senha
+modalForgotPasswordBtn.addEventListener("click", () => {
+    const email = modalForgotPasswordEmailInput.value;
+
+    if (!email) {
+        forgotPasswordMessage.textContent = "Por favor, insira um e-mail válido.";
+        forgotPasswordMessage.style.display = "block";
+        return;
+    }
+
+    sendPasswordResetEmail(auth, email)
+        .then(() => {
+            forgotPasswordMessage.textContent = "E-mail de redefinição de senha enviado com sucesso! Verifique sua caixa de entrada.";
+            forgotPasswordMessage.style.display = "block";
+            forgotPasswordMessage.style.color = "green"; // Sucesso em verde
+            setTimeout(() => {
+                forgotPasswordModal.style.display = "none";
+            }, 3000); // Fechar modal após 3 segundos
+        })
+        .catch((error) => {
+            let errorMessage = "Erro ao enviar o e-mail de redefinição: ";
+            switch (error.code) {
+                case "auth/invalid-email":
+                    errorMessage += "E-mail inválido.";
+                    break;
+                case "auth/user-not-found":
+                    errorMessage += "Usuário não encontrado.";
+                    break;
+                default:
+                    errorMessage += error.message;
+            }
+            forgotPasswordMessage.textContent = errorMessage;
+            forgotPasswordMessage.style.display = "block";
+            forgotPasswordMessage.style.color = "red"; // Erro em vermelho
         });
 });
 

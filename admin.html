@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -50,13 +51,13 @@
         const salvarEdicaoBtn = document.getElementById("salvar-edicao-btn");
         const cancelarEdicaoBtn = document.getElementById("cancelar-edicao-btn");
         const closeButtonEdicao = document.getElementById("close-button-edicao");
-        const formularioNovoAgendamentoDiv = document.getElementById("formulario-novo-agendamento");
+        const modalNovoAgendamento = document.getElementById("modal-novo-agendamento");
         const formNovoAgendamento = document.getElementById("form-novo-agendamento");
+        const closeButtonNovo = document.getElementById("close-button-novo-agendamento");
 
         let agendamentosList = [];
         let usuariosList = [];
 
-        // Mapeamento de durações dos serviços (em minutos)
         const duracaoServicos = {
             "Manicure - Pé e Mão": 120,
             "Manicure - Mão Simples": 60,
@@ -643,10 +644,15 @@
                 });
             }
 
-            // Fechar modal ao clicar fora do conteúdo
             window.addEventListener("click", (event) => {
                 if (event.target === modalEdicao) {
                     modalEdicao.style.display = "none";
+                }
+                if (event.target === modalNovoAgendamento) {
+                    modalNovoAgendamento.style.display = "none";
+                    formNovoAgendamento.reset();
+                    const horarioSelect = document.getElementById("novo-horario");
+                    horarioSelect.innerHTML = '<option value="">Selecione uma data primeiro</option>';
                 }
             });
 
@@ -731,7 +737,7 @@
                         formNovoAgendamento.reset();
                         const horarioSelect = document.getElementById("novo-horario");
                         horarioSelect.innerHTML = '<option value="">Selecione uma data primeiro</option>';
-                        formularioNovoAgendamentoDiv.style.display = "none";
+                        modalNovoAgendamento.style.display = "none";
                     } catch (error) {
                         console.error("Erro ao criar agendamento:", error);
                         alert("Erro ao criar o agendamento.");
@@ -742,7 +748,7 @@
             const cancelarNovoBtn = document.getElementById("cancelar-novo-btn");
             if (cancelarNovoBtn) {
                 cancelarNovoBtn.addEventListener("click", () => {
-                    formularioNovoAgendamentoDiv.style.display = "none";
+                    modalNovoAgendamento.style.display = "none";
                     formNovoAgendamento.reset();
                     const horarioSelect = document.getElementById("novo-horario");
                     horarioSelect.innerHTML = '<option value="">Selecione uma data primeiro</option>';
@@ -752,7 +758,16 @@
             const abrirNovoAgendamentoBtn = document.getElementById("abrir-novo-agendamento");
             if (abrirNovoAgendamentoBtn) {
                 abrirNovoAgendamentoBtn.addEventListener("click", () => {
-                    formularioNovoAgendamentoDiv.style.display = "block";
+                    modalNovoAgendamento.style.display = "block";
+                });
+            }
+
+            if (closeButtonNovo) {
+                closeButtonNovo.addEventListener("click", () => {
+                    modalNovoAgendamento.style.display = "none";
+                    formNovoAgendamento.reset();
+                    const horarioSelect = document.getElementById("novo-horario");
+                    horarioSelect.innerHTML = '<option value="">Selecione uma data primeiro</option>';
                 });
             }
         });
@@ -785,44 +800,6 @@
     </div>
     <button id="abrir-novo-agendamento">Novo Agendamento</button>
     <div id="lista-de-agendamentos-admin"></div>
-
-    <div id="formulario-novo-agendamento" style="display: none;">
-        <h2>Novo Agendamento</h2>
-        <form id="form-novo-agendamento">
-            <div style="margin-bottom: 20px;">
-                <label for="novo-usuario">Usuário:</label>
-                <select id="novo-usuario" required>
-                    <option value="">Selecione um usuário</option>
-                </select>
-            </div>
-            <div style="margin-bottom: 20px;">
-                <label>Serviços:</label>
-                <div style="display: flex; flex-direction: column;">
-                    <label><input type="checkbox" class="novo-servico-checkbox" value="Manicure - Pé e Mão"> Manicure - Pé e Mão</label>
-                    <label><input type="checkbox" class="novo-servico-checkbox" value="Manicure - Mão Simples"> Manicure - Mão Simples</label>
-                    <label><input type="checkbox" class="novo-servico-checkbox" value="Pé Simples"> Pé Simples</label>
-                    <label><input type="checkbox" class="novo-servico-checkbox" value="ESMALTAÇÃO EM GEL C/ Cutilagem"> ESMALTAÇÃO EM GEL C/ Cutilagem</label>
-                    <label><input type="checkbox" class="novo-servico-checkbox" value="Esmaltação Mão"> Esmaltação Mão</label>
-                    <label><input type="checkbox" class="novo-servico-checkbox" value="Alongamento Speed Tip Gel"> Alongamento Speed Tip Gel</label>
-                    <label><input type="checkbox" class="novo-servico-checkbox" value="PLÁSTICA DOS PÉS"> PLÁSTICA DOS PÉS</label>
-                    <label><input type="checkbox" class="novo-servico-checkbox" value="Aplicação Unha Postiça"> Aplicação Unha Postiça</label>
-                    <label><input type="checkbox" class="novo-servico-checkbox" value="SPA DOS PÉS"> SPA DOS PÉS</label>
-                </div>
-            </div>
-            <div style="margin-bottom: 20px;">
-                <label for="novo-data">Data:</label>
-                <input type="date" id="novo-data" required />
-            </div>
-            <div style="margin-bottom: 20px;">
-                <label for="novo-horario">Horário:</label>
-                <select id="novo-horario" required>
-                    <option value="">Selecione uma data primeiro</option>
-                </select>
-            </div>
-            <button type="submit">Criar Agendamento</button>
-            <button type="button" id="cancelar-novo-btn">Cancelar</button>
-        </form>
-    </div>
 </div>
 
 <div id="modal-edicao" class="modal-edicao">
@@ -833,7 +810,7 @@
             <form id="form-editar-agendamento">
                 <input type="hidden" id="editar-agendamento-id" />
                 <div style="margin-bottom: 20px;">
-                    <label for="editar-data" style="font-weight: bold;">📅 Data do Agendamento:</label><br />
+                    <label for="editar-data" style="font-weight: bold;">📅 Data do Agendamento:</label><br
                     <input type="date" id="editar-data" style="margin-top: 5px;" required />
                 </div>
                 <div style="margin-bottom: 20px;">
@@ -860,6 +837,49 @@
     </div>
 </div>
 
+<div id="modal-novo-agendamento" class="modal-novo-agendamento">
+    <div class="modal-content-novo-agendamento">
+        <span id="close-button-novo-agendamento" class="close-button-novo-agendamento">&times;</span>
+        <div id="formulario-novo-agendamento">
+            <h2>Novo Agendamento</h2>
+            <form id="form-novo-agendamento">
+                <div style="margin-bottom: 20px;">
+                    <label for="novo-usuario">Usuário:</label>
+                    <select id="novo-usuario" required>
+                        <option value="">Selecione um usuário</option>
+                    </select>
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <label>Serviços:</label>
+                    <div style="display: flex; flex-direction: column;">
+                        <label><input type="checkbox" class="novo-servico-checkbox" value="Manicure - Pé e Mão"> Manicure - Pé e Mão</label>
+                        <label><input type="checkbox" class="novo-servico-checkbox" value="Manicure - Mão Simples"> Manicure - Mão Simples</label>
+                        <label><input type="checkbox" class="novo-servico-checkbox" value="Pé Simples"> Pé Simples</label>
+                        <label><input type="checkbox" class="novo-servico-checkbox" value="ESMALTAÇÃO EM GEL C/ Cutilagem"> ESMALTAÇÃO EM GEL C/ Cutilagem</label>
+                        <label><input type="checkbox" class="novo-servico-checkbox" value="Esmaltação Mão"> Esmaltação Mão</label>
+                        <label><input type="checkbox" class="novo-servico-checkbox" value="Alongamento Speed Tip Gel"> Alongamento Speed Tip Gel</label>
+                        <label><input type="checkbox" class="novo-servico-checkbox" value="PLÁSTICA DOS PÉS"> PLÁSTICA DOS PÉS</label>
+                        <label><input type="checkbox" class="novo-servico-checkbox" value="Aplicação Unha Postiça"> Aplicação Unha Postiça</label>
+                        <label><input type="checkbox" class="novo-servico-checkbox" value="SPA DOS PÉS"> SPA DOS PÉS</label>
+                    </div>
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <label for="novo-data">Data:</label>
+                    <input type="date" id="novo-data" required />
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <label for="novo-horario">Horário:</label>
+                    <select id="novo-horario" required>
+                        <option value="">Selecione uma data primeiro</option>
+                    </select>
+                </div>
+                <button type="submit">Criar Agendamento</button>
+                <button type="button" id="cancelar-novo-btn">Cancelar</button>
+            </form>
+        </div>
+    </div>
+</div>
+
 <div id="access-denied" style="display: none;">
     <h1>Acesso Negado</h1>
     <p>Você não tem permissão para acessar esta página.</p>
@@ -867,5 +887,6 @@
 </div>
 <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9330e1833c7fc006',t:'MTc0NTExMjY3My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
 <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9335d3be7d5cbfed',t:'MTc0NTE2NDUzOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9336cea5db68673d',t:'MTc0NTE3NDgxNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
 </body>
 </html>

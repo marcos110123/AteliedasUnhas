@@ -247,11 +247,10 @@ hr {
 #access-denied a:hover {
     text-decoration: underline;
 }
-/* Estilos existentes mantidos, apenas adicionando os novos para o modal de edição */
 
 /* Modal para o formulário de edição */
 .modal-edicao {
-    display: none; /* Oculto por padrão */
+    display: none;
     position: fixed;
     z-index: 1000;
     left: 0;
@@ -259,8 +258,8 @@ hr {
     width: 100%;
     height: 100%;
     overflow: auto;
-    background-color: rgba(0, 0, 0, 0.7); /* Fundo escuro com transparência */
-    backdrop-filter: blur(5px); /* Efeito de desfoque, consistente com styles.css */
+    background-color: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
     transition: opacity 0.3s ease;
 }
 
@@ -268,13 +267,13 @@ hr {
     background-color: #fff;
     margin: 8% auto;
     padding: 20px;
-    border-radius: 8px; /* Bordas arredondadas, consistente com styles2.css */
+    border-radius: 8px;
     width: 90%;
-    max-width: 600px; /* Tamanho máximo maior que o modal de login para acomodar o formulário */
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Sombra suave, consistente com styles2.css */
+    max-width: 600px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     position: relative;
     transform: scale(0.9);
-    animation: zoomIn 0.3s ease-out forwards; /* Animação de zoom, igual ao styles.css */
+    animation: zoomIn 0.3s ease-out forwards;
 }
 
 @keyframes zoomIn {
@@ -303,18 +302,18 @@ hr {
 .close-button-edicao:hover,
 .close-button-edicao:focus {
     opacity: 1;
-    color: #e74c3c; /* Cor de destaque no hover, consistente com styles.css */
+    color: #e74c3c;
     transform: scale(1.2);
 }
 
 /* Ajustes no formulário de edição para o modal */
 #formulario-edicao-agendamento {
-    background: #ecf0f1; /* Fundo claro, consistente com styles2.css */
+    background: #ecf0f1;
     padding: 20px;
     border-radius: 5px;
-    margin: 0; /* Removido margem para se adequar ao modal */
-    max-height: 80vh; /* Limite de altura com rolagem */
-    overflow-y: auto; /* Rolagem vertical se necessário */
+    margin: 0;
+    max-height: 80vh;
+    overflow-y: auto;
 }
 
 #formulario-edicao-agendamento h3 {
@@ -354,36 +353,138 @@ hr {
     background-color: #2980b9;
 }
 
+/* Modal para o formulário de novo agendamento */
+.modal-novo-agendamento {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+    transition: opacity 0.3s ease;
+}
+
+.modal-content-novo-agendamento {
+    background-color: #fff;
+    margin: 8% auto;
+    padding: 20px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 600px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    position: relative;
+    transform: scale(0.9);
+    animation: zoomIn 0.3s ease-out forwards;
+}
+
+.close-button-novo-agendamento {
+    color: #999;
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.close-button-novo-agendamento:hover,
+.close-button-novo-agendamento:focus {
+    opacity: 1;
+    color: #e74c3c;
+    transform: scale(1.2);
+}
+
+/* Ajustes no formulário de novo agendamento para o modal */
+#formulario-novo-agendamento {
+    background: #ecf0f1;
+    padding: 20px;
+    border-radius: 5px;
+    margin: 0;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+#formulario-novo-agendamento h2 {
+    font-size: 1.5rem;
+    color: #2c3e50;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+#formulario-novo-agendamento label {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+#formulario-novo-agendamento input[type="date"],
+#formulario-novo-agendamento input[type="text"],
+#formulario-novo-agendamento select {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1rem;
+    width: 100%;
+}
+
+#formulario-novo-agendamento button {
+    background-color: #3498db;
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.3s ease;
+    margin-top: 10px;
+}
+
+#formulario-novo-agendamento button:hover {
+    background-color: #2980b9;
+}
+
 /* Ajustes responsivos para dispositivos móveis */
 @media (max-width: 768px) {
-    .modal-content-edicao {
+    .modal-content-edicao,
+    .modal-content-novo-agendamento {
         width: 95%;
         margin: 10% auto;
         padding: 15px;
     }
 
-    #formulario-edicao-agendamento {
+    #formulario-edicao-agendamento,
+    #formulario-novo-agendamento {
         padding: 15px;
     }
 
-    #formulario-edicao-agendamento h3 {
+    #formulario-edicao-agendamento h3,
+    #formulario-novo-agendamento h2 {
         font-size: 1.1rem;
     }
 
     #formulario-edicao-agendamento input[type="date"],
     #formulario-edicao-agendamento input[type="text"],
-    #formulario-edicao-agendamento select {
+    #formulario-edicao-agendamento select,
+    #formulario-novo-agendamento input[type="date"],
+    #formulario-novo-agendamento input[type="text"],
+    #formulario-novo-agendamento select {
         font-size: 0.9rem;
     }
 
-    #formulario-edicao-agendamento button {
+    #formulario-edicao-agendamento button,
+    #formulario-novo-agendamento button {
         width: 100%;
         padding: 12px;
     }
 }
 
-/* Garantir que o modal seja acessível */
-.modal-content-edicao:focus-within {
+/* Garantir que os modais sejam acessíveis */
+.modal-content-edicao:focus-within,
+.modal-content-novo-agendamento:focus-within {
     outline: 2px solid #3498db;
     outline-offset: 2px;
 }
