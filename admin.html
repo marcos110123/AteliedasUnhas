@@ -246,7 +246,10 @@
                             agendamento.servicos.forEach(servico => {
                                 duracaoTotal += duracaoServicos[servico] || 60;
                             });
+                        } else {
+                            duracaoTotal = 60; // Default duration if no services
                         }
+                        console.log("Duração total para edição:", duracaoTotal);
 
                         await atualizarHorariosDisponiveis(dataObj, agendamentoId, duracaoTotal, false);
                         editarHorarioSelect.value = horaOriginal;
@@ -327,6 +330,7 @@
                 querySnapshot.forEach((doc) => {
                     agendamentosNaData.push({ id: doc.id, ...doc.data() });
                 });
+                console.log("Agendamentos encontrados na data:", agendamentosNaData);
                 return agendamentosNaData;
             } catch (error) {
                 console.error("Erro ao buscar agendamentos:", error);
@@ -339,8 +343,9 @@
             const horariosFuncionamentoFim = 17;
             const intervaloAgendamentoMinutos = 15;
             const horariosPossiveis = [];
-            const horariosOcupados = new Set();
+            const horariosOcupados = [];
 
+            // Generate possible time slots
             for (let hora = horariosFuncionamentoInicio; hora < horariosFuncionamentoFim; hora++) {
                 for (let minuto = 0; minuto < 60; minuto += intervaloAgendamentoMinutos) {
                     const horario = `${hora.toString().padStart(2, '0')}:${minuto.toString().padStart(2, '0')}`;
@@ -355,6 +360,7 @@
                 horarioOriginal = `${dataOriginal.getHours().toString().padStart(2, '0')}:${dataOriginal.getMinutes().toString().padStart(2, '0')}`;
             }
 
+            // Mark occupied time slots
             agendamentosNaData
                 .filter(agendamento => agendamento.id !== agendamentoIdAtual)
                 .forEach(agendamento => {
@@ -369,13 +375,7 @@
                     }
 
                     const fim = new Date(inicio.getTime() + duracaoAgendamento * 60 * 1000);
-                    let currentTime = new Date(inicio);
-                    while (currentTime < fim) {
-                        const horaFormatada = String(currentTime.getHours()).padStart(2, '0');
-                        const minutoFormatada = String(currentTime.getMinutes()).padStart(2, '0');
-                        horariosOcupados.add(`${horaFormatada}:${minutoFormatada}`);
-                        currentTime.setMinutes(currentTime.getMinutes() + intervaloAgendamentoMinutos);
-                    }
+                    horariosOcupados.push({ inicio, fim });
                 });
 
             const horariosDisponiveis = [];
@@ -385,16 +385,20 @@
                 inicioAgendamento.setHours(h, m, 0, 0);
                 const fimAgendamento = new Date(inicioAgendamento.getTime() + duracaoTotal * 60 * 1000);
 
+                // Ensure the appointment ends within operating hours
+                const horaFim = fimAgendamento.getHours() + (fimAgendamento.getMinutes() / 60);
+                if (horaFim > horariosFuncionamentoFim) {
+                    return;
+                }
+
                 let horarioLivre = true;
-                let currentTime = new Date(inicioAgendamento);
-                while (currentTime < fimAgendamento) {
-                    const horaAtual = String(currentTime.getHours()).padStart(2, '0');
-                    const minutoAtual = String(currentTime.getMinutes()).padStart(2, '0');
-                    if (horariosOcupados.has(`${horaAtual}:${minutoAtual}`)) {
+                for (const ocupado of horariosOcupados) {
+                    if (
+                        (inicioAgendamento < ocupado.fim && fimAgendamento > ocupado.inicio)
+                    ) {
                         horarioLivre = false;
                         break;
                     }
-                    currentTime.setMinutes(currentTime.getMinutes() + intervaloAgendamentoMinutos);
                 }
 
                 if (horarioLivre) {
@@ -402,17 +406,23 @@
                 }
             });
 
-            if (horarioOriginal && !horariosDisponiveis.includes(horarioOriginal)) {
+            if (horarioOriginal && !horariosDisponiveis.includes(horarioOriginal) && agendamentoIdAtual) {
                 horariosDisponiveis.push(horarioOriginal);
                 horariosDisponiveis.sort();
             }
 
+            console.log("Horários disponíveis:", horariosDisponiveis);
             return horariosDisponiveis;
         }
 
         async function atualizarHorariosDisponiveis(dataSelecionada, agendamentoIdAtual, duracaoTotal, isNovoAgendamento = false) {
-            const agendamentosNaData = await buscarAgendamentosPorData(dataSelecionada);
-            const horariosDisponiveis = gerarHorariosDisponiveis(dataSelecionada, agendamentosNaData, agendamentoIdAtual, duracaoTotal);
+            console.log("Atualizando horários para data:", dataSelecionada, "Duração:", duracaoTotal, "Agendamento ID:", agendamentoIdAtual);
+            let data = dataSelecionada;
+            if (typeof dataSelecionada === 'string') {
+                data = new Date(dataSelecionada);
+            }
+            const agendamentosNaData = await buscarAgendamentosPorData(data);
+            const horariosDisponiveis = gerarHorariosDisponiveis(data, agendamentosNaData, agendamentoIdAtual, duracaoTotal);
 
             const horarioSelect = document.getElementById(isNovoAgendamento ? "novo-horario" : "editar-horario");
             horarioSelect.innerHTML = '<option value="">Selecione um horário</option>';
@@ -506,8 +516,10 @@
                             agendamento.servicos.forEach(servico => {
                                 duracaoTotal += duracaoServicos[servico] || 60;
                             });
+                        } else {
+                            duracaoTotal = 60;
                         }
-                        await atualizarHorariosDisponiveis(new Date(dataSelecionada), editarAgendamentoIdInput.value, duracaoTotal, false);
+                        await atualizarHorariosDisponiveis(dataSelecionada, editarAgendamentoIdInput.value, duracaoTotal, false);
                     } else {
                         editarHorarioSelect.innerHTML = '<option value="">Selecione uma data primeiro</option>';
                         editarHorarioSelect.disabled = true;
@@ -527,9 +539,45 @@
                         return;
                     }
 
-                    const [hora, minuto] = horarioSelecionado.split(":");
-                    const novaData = new Date(dataSelecionada);
-                    novaData.setHours(parseInt(hora), parseInt(minuto), 0, 0);
+                    const [hora, minuto] = horarioSelecionado.split(":").map(Number);
+                    const [ano, mes, dia] = dataSelecionada.split("-").map(Number);
+                    const novaData = new Date(ano, mes - 1, dia, hora, minuto, 0);
+
+                    const agendamento = agendamentosList.find(ag => ag.id === agendamentoId);
+                    let duracaoTotal = 0;
+                    if (agendamento && Array.isArray(agendamento.servicos)) {
+                        agendamento.servicos.forEach(servico => {
+                            duracaoTotal += duracaoServicos[servico] || 60;
+                        });
+                    } else {
+                        duracaoTotal = 60;
+                    }
+
+                    const agendamentosNaData = await buscarAgendamentosPorData(novaData);
+                    const fimAgendamento = new Date(novaData.getTime() + duracaoTotal * 60 * 1000);
+
+                    const conflito = agendamentosNaData
+                        .filter(ag => ag.id !== agendamentoId)
+                        .some(agendamento => {
+                            const inicioExistente = new Date(agendamento.data);
+                            let duracaoExistente = 0;
+                            if (Array.isArray(agendamento.servicos)) {
+                                agendamento.servicos.forEach(servico => {
+                                    duracaoExistente += duracaoServicos[servico] || 60;
+                                });
+                            } else {
+                                duracaoExistente = 60;
+                            }
+                            const fimExistente = new Date(inicioExistente.getTime() + duracaoExistente * 60 * 1000);
+                            return (
+                                (novaData < fimExistente && fimAgendamento > inicioExistente)
+                            );
+                        });
+
+                    if (conflito) {
+                        alert("O horário selecionado já está ocupado. Escolha outro horário.");
+                        return;
+                    }
 
                     try {
                         const agendamentoRef = doc(db, "agendamentos", agendamentoId);
@@ -587,6 +635,7 @@
                     servicosSelecionados.forEach(servico => {
                         duracaoTotal += duracaoServicos[servico] || 60;
                     });
+                    console.log("Duração total para novo agendamento:", duracaoTotal);
                     await atualizarHorariosDisponiveis(dataSelecionada, null, duracaoTotal, true);
                 }
             }
@@ -594,14 +643,7 @@
             const novoDataInput = document.getElementById("novo-data");
             if (novoDataInput) {
                 novoDataInput.addEventListener("change", async () => {
-                    const dataSelecionada = novoDataInput.value;
-                    if (dataSelecionada) {
-                        await atualizarHorariosNovoAgendamento();
-                    } else {
-                        const horarioSelect = document.getElementById("novo-horario");
-                        horarioSelect.innerHTML = '<option value="">Selecione uma data primeiro</option>';
-                        horarioSelect.disabled = true;
-                    }
+                    await atualizarHorariosNovoAgendamento();
                 });
             }
 
@@ -635,9 +677,14 @@
                         return;
                     }
 
-                    const [hora, minuto] = horarioSelecionado.split(":");
-                    const dataAgendamento = new Date(dataSelecionada);
-                    dataAgendamento.setHours(parseInt(hora), parseInt(minuto), 0, 0);
+                    const [hora, minuto] = horarioSelecionado.split(":").map(Number);
+                    const [ano, mes, dia] = dataSelecionada.split("-").map(Number);
+                    const dataAgendamento = new Date(ano, mes - 1, dia, hora, minuto, 0);
+
+                    let duracaoTotal = 0;
+                    servicosSelecionados.forEach(servico => {
+                        duracaoTotal += duracaoServicos[servico] || 60;
+                    });
 
                     const hoje = new Date();
                     if (dataAgendamento < hoje.setHours(0, 0, 0, 0)) {
@@ -645,19 +692,31 @@
                         return;
                     }
 
-                    try {
-                        const q = query(
-                            collection(db, "agendamentos"),
-                            where("data", "==", dataAgendamento.toISOString()),
-                            where("status", "==", "pendente")
-                        );
-                        const querySnapshot = await getDocs(q);
+                    const agendamentosNaData = await buscarAgendamentosPorData(dataAgendamento);
+                    const fimAgendamento = new Date(dataAgendamento.getTime() + duracaoTotal * 60 * 1000);
 
-                        if (!querySnapshot.empty) {
-                            alert("O horário selecionado já está ocupado. Escolha outro horário.");
-                            return;
+                    const conflito = agendamentosNaData.some(agendamento => {
+                        const inicioExistente = new Date(agendamento.data);
+                        let duracaoExistente = 0;
+                        if (Array.isArray(agendamento.servicos)) {
+                            agendamento.servicos.forEach(servico => {
+                                duracaoExistente += duracaoServicos[servico] || 60;
+                            });
+                        } else {
+                            duracaoExistente = 60;
                         }
+                        const fimExistente = new Date(inicioExistente.getTime() + duracaoExistente * 60 * 1000);
+                        return (
+                            (dataAgendamento < fimExistente && fimAgendamento > inicioExistente)
+                        );
+                    });
 
+                    if (conflito) {
+                        alert("O horário selecionado já está ocupado. Escolha outro horário.");
+                        return;
+                    }
+
+                    try {
                         await addDoc(collection(db, "agendamentos"), {
                             uid: usuarioUid,
                             servicos: servicosSelecionados,
@@ -738,7 +797,7 @@
 
 <div id="modal-edicao" class="modal-edicao">
     <div class="modal-content-edicao">
-        <span id="close-button-edicao" class="close-button-edicao">&times;</span>
+        <span id="close-button-edicao" class="close-button-edicao">×</span>
         <div id="formulario-edicao-agendamento">
             <h3>Editar Agendamento</h3>
             <form id="form-editar-agendamento">
@@ -769,7 +828,7 @@
 
 <div id="modal-novo-agendamento" class="modal-novo-agendamento">
     <div class="modal-content-novo-agendamento">
-        <span id="close-button-novo-agendamento" class="close-button-novo-agendamento">&times;</span>
+        <span id="close-button-novo-agendamento" class="close-button-novo-agendamento">×</span>
         <div id="formulario-novo-agendamento">
             <h2>Novo Agendamento</h2>
             <form id="form-novo-agendamento">
@@ -815,5 +874,5 @@
     <p>Você não tem permissão para acessar esta página.</p>
     <p><a href="/index.html">Voltar para a página inicial</a></p>
 </div>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9336fd5789b1c00b',t:'MTc0NTE3NjcyOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'93370d446b0653ee',t:'MTc0NTE3NzM4MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
