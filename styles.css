@@ -1359,4 +1359,215 @@ form#form-pacote-agendamento {
   #limpar-filtro-btn {
     background-color: #dc3545;
     color: white;
-  }  
+  } 
+
+  
+  #pacotes.container {
+    max-width: 960px;
+    margin: 20px auto;
+    padding: 20px;
+    background: #fff;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+#pacotes h2 {
+    font-size: 1.1rem;
+    color: #333;
+    margin-bottom: 15px;
+    font-family: 'Montserrat', sans-serif;
+    text-align: center;
+   
+}
+
+#pacote-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+#pacote-form label {
+    font-size: 0.9rem;
+    color: #555;
+    font-weight: bold;
+    font-family: 'Montserrat', sans-serif;
+}
+
+#pacote-form select,
+#pacote-form input[type="date"] {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    font-family: 'Montserrat', sans-serif;
+    transition: border-color 0.3s ease;
+}
+
+#pacote-form select:focus,
+#pacote-form input[type="date"]:focus {
+    border-color: #1F8070;
+    outline: none;
+}
+
+.offer-btn {
+    background: #1F8070;
+    color: #fff;
+    padding: 10px 15px;
+    border-radius: 5px;
+    font-size: 0.9rem;
+    font-family: 'Montserrat', sans-serif;
+    cursor: pointer;
+    align-self: center;
+    transition: background-color 0.3s ease;
+}
+
+.offer-btn:hover {
+    background: #147c67;
+}
+
+
+
+.btn-voltar:hover {
+    color: #1F8070;
+    text-decoration: underline;
+}
+
+@media (max-width: 600px) {
+    #pacotes.container {
+        padding: 15px;
+    }
+
+    #pacotes h2 {
+        font-size: 1rem;
+    }
+
+    #pacote-form select,
+    #pacote-form input[type="date"] {
+        padding: 7px;
+        font-size: 0.85rem;
+    }
+
+    .offer-btn {
+        padding: 8px 12px;
+        font-size: 0.85rem;
+    }
+    
+}
+#formulario-novo-agendamento {
+    display: none;
+    max-width: 600px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    font-family: Arial, sans-serif;
+}
+
+#formulario-novo-agendamento h2 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 20px;
+    font-size: 24px;
+}
+
+#form-novo-agendamento {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+#form-novo-agendamento label {
+    font-weight: bold;
+    color: #555;
+    margin-bottom: 5px;
+    display: block;
+}
+
+#form-novo-agendamento select,
+#form-novo-agendamento input[type="date"] {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+    color: #333;
+    background-color: #fff;
+    transition: border-color 0.3s;
+}
+
+#form-novo-agendamento select:focus,
+#form-novo-agendamento input[type="date"]:focus {
+    border-color: #007bff;
+    outline: none;
+}
+
+#form-novo-agendamento .novo-servico-checkbox {
+    margin-right: 10px;
+}
+
+#form-novo-agendamento .servicos-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #fff;
+}
+
+#form-novo-agendamento .servicos-container label {
+    display: flex;
+    align-items: center;
+    font-weight: normal;
+    color: #333;
+}
+
+#form-novo-agendamento button {
+    padding: 12px;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+#form-novo-agendamento button[type="submit"] {
+    background-color: #007bff;
+    color: #fff;
+}
+
+#form-novo-agendamento button[type="submit"]:hover {
+    background-color: #0056b3;
+}
+
+#form-novo-agendamento #cancelar-novo-btn {
+    background-color: #dc3545;
+    color: #fff;
+}
+
+#form-novo-agendamento #cancelar-novo-btn:hover {
+    background-color: #b02a37;
+}
+
+/* Estilização responsiva */
+@media (max-width: 480px) {
+    #formulario-novo-agendamento {
+        padding: 15px;
+        margin: 10px;
+    }
+
+    #formulario-novo-agendamento h2 {
+        font-size: 20px;
+    }
+
+    #form-novo-agendamento select,
+    #form-novo-agendamento input[type="date"],
+    #form-novo-agendamento button {
+        font-size: 14px;
+        padding: 8px;
+    }
+}

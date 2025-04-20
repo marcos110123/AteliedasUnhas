@@ -200,35 +200,26 @@
                         <span class="preco-tempo">R$ 150,00 <span class="tempo">1h15m</span></span>
                     </div>
                     <input type="checkbox" class="selecionar-checkbox" value="Alongamento Speed Tip Gel">
-                </li> <li class="servico-item">
+                </li>
+                <li class="servico-item">
                     <div class="servico-info">
                         <span class="nome-servico">Pedicure - PLÁSTICA DOS PÉS</span>
                         <span class="preco-tempo">R$ 150,00 <span class="tempo">1h15m</span></span>
                     </div>
                     <input type="checkbox" class="selecionar-checkbox" value="PLÁSTICA DOS PÉS">
-                </li> <li class="servico-item">
+                </li>
+                <li class="servico-item">
                     <div class="servico-info">
                         <span class="nome-servico">Manicure - Aplicação Unha Postiça</span>
                         <span class="preco-tempo">R$ 70,00 <span class="tempo">1h15m</span></span>
-                        </div>
-                    <input type="checkbox" class="selecionar-checkbox" value="Aplicação Unha Postiça">
-                </li> <li class="servico-item">
-                    <div class="servico-info">
-                        <span class="nome-servico">Manicure - Aplicação Unha Postiça</span>
-                        <span class="preco-tempo">R$ 70,00 <span class="tempo">1h15m</span></span>
-                        </div>
-                    <input type="checkbox" class="selecionar-checkbox" value="Aplicação Unha Postiça">
-                </li> <li class="servico-item">
-                    <div class="servico-info">
-                           <span class="nome-servico">Pedicure - PLÁSTICA DOS PÉS</span>
-                        <span class="preco-tempo">R$ 150,00 <span class="tempo">1h15m</span></span>
                     </div>
-                    <input type="checkbox" class="selecionar-checkbox" value="PLÁSTICA DOS PÉS">
-                </li> <li class="servico-item">
+                    <input type="checkbox" class="selecionar-checkbox" value="Aplicação Unha Postiça">
+                </li>
+                <li class="servico-item">
                     <div class="servico-info">
                         <span class="nome-servico">Pedicure - SPA DOS PÉS</span>
                         <span class="preco-tempo">R$ 75,00 <span class="tempo">1h20m</span></span>
-                        </div>
+                    </div>
                     <input type="checkbox" class="selecionar-checkbox" value="SPA DOS PÉS">
                 </li>
             </ul>
@@ -245,11 +236,39 @@
                 <label for="data-agendamento">Escolha a Data:</label>
                 <input type="date" id="data-agendamento" required />
                 <div id="horarios-disponiveis">
-                    </div>
+                </div>
                 <button type="submit" class="offer-btn">Agendar</button>
                 <div><a href="index.html" class="btn-voltar">← Voltar a tela inicial</a></div>
             </form>
         </div>
+    </section>
+
+    <section id="pacotes" class="container">
+        <h2>Agendar Pacotes</h2>
+        <form id="pacote-form">
+            <label for="servico-pacote">Selecione o Serviço:</label>
+            <select id="servico-pacote" required>
+                <option value="">-- Escolha um serviço --</option>
+                <option value="Manicure - Pé e Mão">Manicure - Pé e Mão</option>
+                <option value="Manicure - Mão Simples">Manicure - Mão Simples</option>
+                <option value="Pé Simples">Manicure - Pé Simples</option>
+                <option value="ESMALTAÇÃO EM GEL C/ Cutilagem">Manicure - ESMALTAÇÃO EM GEL C/ Cutilagem</option>
+                <option value="Esmaltação Mão">Manicure - Esmaltação Mão</option>
+                <option value="Alongamento Speed Tip Gel">Manicure - Alongamento Speed Tip Gel</option>
+                <option value="PLÁSTICA DOS PÉS">Pedicure - PLÁSTICA DOS PÉS</option>
+                <option value="Aplicação Unha Postiça">Manicure - Aplicação Unha Postiça</option>
+                <option value="SPA DOS PÉS">Pedicure - SPA DOS PÉS</option>
+            </select>
+            <div id="datas-pacote-container">
+                <div class="data-pacote-item">
+                    <label for="datas-pacote-0">Escolha a Data:</label>
+                    <input type="date" id="datas-pacote-0" class="datas-pacote" required />
+                </div>
+            </div>
+            <button type="button" id="adicionar-data-pacote" class="add-date-btn">Adicionar Data</button>
+            <div id="horarios-pacote"></div>
+            <button type="submit" class="offer-btn">Agendar Pacote</button>
+        </form>
     </section>
 
     <section id="meus-agendamentos" style="display: none;">
@@ -264,7 +283,7 @@
     <footer>
         <div class="footer-section">
             <h3>Contato</h3>
-            <p>Email: <a href="mailto:Fabyrosahair@loja.com">Ateliedasunhas@loja.com</a></p>
+            <p>Email: <a href="/cdn-cgi/l/email-protection#d99fb8bba0abb6aab8b1b8b0ab99b5b6b3b8f7bab6b4"><span class="__cf_email__" data-cfemail="efae9b8a83868a8b8e9c9a81878e9caf8380858ec18c8082">[email&#160;protected]</span></a></p>
             <p>Telefone: (11) 95215-2645</p>
             <p>Instagram: Joymaurieli</p>
             
@@ -275,6 +294,7 @@
         </div>
     </footer>
 
+    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script>
     <script type="module" src="scripts.js"></script>
 </body>
 </html>

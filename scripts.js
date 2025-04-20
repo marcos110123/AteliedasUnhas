@@ -1,10 +1,11 @@
 // === Firebase Imports ===
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
-import { Timestamp,getFirestore, collection, addDoc, serverTimestamp, query, where, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+import { Timestamp, getFirestore, collection, addDoc, serverTimestamp, query, where, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+
 // Inicialize o EmailJS com o seu User ID
 emailjs.init("xlsoL46EksEyS0eq8"); // Substitua com o seu User ID
+
 // === Firebase Config ===
 const firebaseConfig = {
     apiKey: "AIzaSyD2abLi_zEjHPS0D8EvcDPYLIbOhQa68p8",
@@ -15,22 +16,21 @@ const firebaseConfig = {
     appId: "1:403757642546:web:b2093665bce9099b6fdd2b"
 };
 
-
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+
 const duracaoServicos = {
     "Manicure - Pé e Mão": 120, // 2 horas = 120 minutos
     "Manicure - Mão Simples": 60, // 1 hora = 60 minutos
-    "Pé Simples": 75, // 1 hora e 15 minutos = 75 minutos (corrigi o value do checkbox)
+    "Pé Simples": 75, // 1 hora e 15 minutos = 75 minutos
     "ESMALTAÇÃO EM GEL C/ Cutilagem": 75, // 1 hora e 15 minutos = 75 minutos
     "Esmaltação Mão": 75, // 1 hora e 15 minutos = 75 minutos
     "Alongamento Speed Tip Gel": 75, // 1 hora e 15 minutos = 75 minutos
-    "PLÁSTICA DOS PÉS": 75, // 1 hora e 15 minutos = 75 minutos (duplicado na sua lista, mantive um)
-    "Aplicação Unha Postiça": 75, // 1 hora e 15 minutos = 75 minutos (duplicado na sua lista, mantive um)
+    "PLÁSTICA DOS PÉS": 75, // 1 hora e 15 minutos = 75 minutos
+    "Aplicação Unha Postiça": 75, // 1 hora e 15 minutos = 75 minutos
     "SPA DOS PÉS": 80, // 1 hora e 20 minutos = 80 minutos
 };
-
 
 // === Elementos do DOM ===
 const form = document.getElementById("agendamento-form");
@@ -46,7 +46,12 @@ const checkboxesServicos = document.querySelectorAll('.selecionar-checkbox');
 const botaoContinuarAgendamento = document.getElementById('continuar-agendamento');
 const dataAgendamentoInput = document.getElementById('data-agendamento');
 const horariosDisponiveisDiv = document.getElementById('horarios-disponiveis');
-const adminLinkContainer = document.getElementById('admin-link-container'); // Novo elemento
+const adminLinkContainer = document.getElementById('admin-link-container');
+const pacoteForm = document.getElementById('pacote-form');
+const servicoPacoteSelect = document.getElementById('servico-pacote');
+const datasPacoteContainer = document.getElementById('datas-pacote-container');
+const adicionarDataPacoteBtn = document.getElementById('adicionar-data-pacote');
+const horariosPacoteDiv = document.getElementById('horarios-pacote');
 
 // === Modal de Registro ===
 const registerModal = document.getElementById("register-modal");
@@ -56,8 +61,8 @@ const modalRegisterBtn = document.getElementById("modal-register-btn");
 const modalEmailInput = document.getElementById("modal-email");
 const modalPasswordInput = document.getElementById("modal-password");
 const registerErrorMessage = document.getElementById("register-error-message");
-const modalNameInput = document.getElementById("modal-name"); // Novo
-const modalPhoneInput = document.getElementById("modal-phone"); // Novo
+const modalNameInput = document.getElementById("modal-name");
+const modalPhoneInput = document.getElementById("modal-phone");
 
 // === Modal de Login ===
 const loginModal = document.getElementById("login-modal");
@@ -95,7 +100,7 @@ const modalSection = document.getElementById("galeria-fotos-modal");
 const overlayGaleria = modalSection.querySelector(".modal-overlay-galeria");
 
 document.getElementById("abrir-galeria").addEventListener("click", (e) => {
-    e.preventDefault;
+    e.preventDefault();
     modalSection.style.display = "block";
 });
 
@@ -111,12 +116,12 @@ document.addEventListener("keydown", (e) => {
 
 // === Seleção de Serviços ===
 let servicosSelecionadosArray = [];
-let duracaoTotalSelecionada = 0; // Variável para armazenar a duração total
+let duracaoTotalSelecionada = 0;
 
 checkboxesServicos.forEach(checkbox => {
     checkbox.addEventListener('change', () => {
         const nomeServico = checkbox.value;
-        const duracao = duracaoServicos[nomeServico] || 60; // Duração padrão de 60 min se não encontrada
+        const duracao = duracaoServicos[nomeServico] || 60;
         if (checkbox.checked) {
             servicosSelecionadosArray.push(nomeServico);
             duracaoTotalSelecionada += duracao;
@@ -131,11 +136,9 @@ checkboxesServicos.forEach(checkbox => {
 });
 
 botaoContinuarAgendamento.addEventListener('click', () => {
-    if (auth.currentUser && (servicosSelecionadosArray.length > 0 )) {
+    if (auth.currentUser && (servicosSelecionadosArray.length > 0)) {
         secaoServicosListados.style.display = 'none';
         secaoAgendamento.style.display = 'block';
-
-        
 
         const servicosHTML = servicosSelecionadosArray.length > 0
             ? `<h4>Serviços Selecionados:</h4><ul>${servicosSelecionadosArray.map(s => `<li>${s}</li>`).join("")}</ul>`
@@ -143,7 +146,6 @@ botaoContinuarAgendamento.addEventListener('click', () => {
 
         divServicosSelecionados.innerHTML = `
             <h3>Resumo da Seleção:</h3>
-
             ${servicosHTML}
         `;
 
@@ -152,7 +154,6 @@ botaoContinuarAgendamento.addEventListener('click', () => {
         alert(auth.currentUser ? 'Selecione ao menos um serviço ou pacote.' : 'Você precisa estar logado para agendar.');
     }
 });
-
 
 // === Função para Buscar Horários Agendados para uma Data ===
 async function buscarHorariosAgendadosParaData(data) {
@@ -177,18 +178,18 @@ async function buscarHorariosAgendadosParaData(data) {
             let duracaoAgendamento = 0;
 
             servicosAgendados.forEach(servico => {
-                duracaoAgendamento += duracaoServicos[servico] || 60; // Obtém a duração do serviço
+                duracaoAgendamento += duracaoServicos[servico] || 60;
             });
 
             const inicio = new Date(dataInicioAgendamento);
-            const fim = new Date(inicio.getTime() + duracaoAgendamento * 60 * 1000); // Adiciona a duração em milissegundos
+            const fim = new Date(inicio.getTime() + duracaoAgendamento * 60 * 1000);
 
             let currentTime = new Date(inicio);
             while (currentTime < fim) {
                 const horaFormatada = String(currentTime.getHours()).padStart(2, '0');
                 const minutoFormatada = String(currentTime.getMinutes()).padStart(2, '0');
                 horariosOcupados.add(`${horaFormatada}:${minutoFormatada}`);
-                currentTime.setMinutes(currentTime.getMinutes() + 1); // Avança 1 minuto
+                currentTime.setMinutes(currentTime.getMinutes() + 1);
             }
         }
 
@@ -201,13 +202,13 @@ async function buscarHorariosAgendadosParaData(data) {
 }
 
 // === Função para Exibir Horários Disponíveis ===
-async function exibirHorariosDisponiveis(horariosAgendados) {
-    horariosDisponiveisDiv.innerHTML = '';
+async function exibirHorariosDisponiveis(horariosAgendados, duracao, container, data, selectId) {
+    container.innerHTML = '';
 
     const horariosPossiveis = [];
     const horaInicio = 8;
     const horaFim = 17;
-    const intervaloMinutos = 15; // Ajuste a granularidade conforme necessário
+    const intervaloMinutos = 15;
 
     for (let hora = horaInicio; hora < horaFim; hora++) {
         for (let minuto = 0; minuto < 60; minuto += intervaloMinutos) {
@@ -217,9 +218,9 @@ async function exibirHorariosDisponiveis(horariosAgendados) {
         }
     }
 
-    if (horariosPossiveis.length > 0 && duracaoTotalSelecionada > 0) {
+    if (horariosPossiveis.length > 0 && duracao > 0) {
         const selectHorario = document.createElement('select');
-        selectHorario.id = 'hora-agendamento';
+        selectHorario.id = selectId;
         selectHorario.required = true;
 
         const optionPadrao = document.createElement('option');
@@ -229,13 +230,13 @@ async function exibirHorariosDisponiveis(horariosAgendados) {
 
         horariosPossiveis.forEach(horaInicioStr => {
             const [h, m] = horaInicioStr.split(':').map(Number);
-            const inicioAgendamento = new Date(dataAgendamentoInput.value);
+            const inicioAgendamento = new Date(data);
             inicioAgendamento.setHours(h);
             inicioAgendamento.setMinutes(m);
             inicioAgendamento.setSeconds(0);
             inicioAgendamento.setMilliseconds(0);
 
-            const fimAgendamento = new Date(inicioAgendamento.getTime() + duracaoTotalSelecionada * 60 * 1000);
+            const fimAgendamento = new Date(inicioAgendamento.getTime() + duracao * 60 * 1000);
 
             let horarioLivre = true;
             let currentTime = new Date(inicioAgendamento);
@@ -251,7 +252,7 @@ async function exibirHorariosDisponiveis(horariosAgendados) {
             }
 
             if (horarioLivre) {
-                const dataHora = `${dataAgendamentoInput.value}T${horaInicioStr}:00`;
+                const dataHora = `${data}T${horaInicioStr}:00`;
                 const option = document.createElement('option');
                 option.value = dataHora;
                 option.textContent = horaInicioStr;
@@ -261,44 +262,193 @@ async function exibirHorariosDisponiveis(horariosAgendados) {
 
         if (selectHorario.options.length > 1) {
             const labelHorario = document.createElement('label');
-            labelHorario.setAttribute('for', 'hora-agendamento');
-            labelHorario.textContent = 'Selecione o Horário:';
-            horariosDisponiveisDiv.appendChild(labelHorario);
-            horariosDisponiveisDiv.appendChild(selectHorario);
+            labelHorario.setAttribute('for', selectId);
+            labelHorario.textContent = `Selecione o Horário para ${data}:`;
+            container.appendChild(labelHorario);
+            container.appendChild(selectHorario);
         } else {
-            horariosDisponiveisDiv.innerHTML = '<p>Não há horários disponíveis para a duração dos serviços selecionados nesta data.</p>';
+            container.innerHTML = `<p>Não há horários disponíveis para a duração do serviço selecionado na data ${data}.</p>`;
         }
-    } else if (servicosSelecionadosArray.length === 0) {
-        horariosDisponiveisDiv.innerHTML = '<p>Selecione os serviços para ver os horários disponíveis.</p>';
     } else {
-        horariosDisponiveisDiv.innerHTML = '<p>Não há horários disponíveis.</p>';
+        container.innerHTML = '<p>Selecione um serviço e data para ver os horários disponíveis.</p>';
     }
 }
 
-// === Evento de Mudança de Data (Quando o usuário seleciona uma data) ===
+// === Evento de Mudança de Data (Agendamento Normal) ===
 dataAgendamentoInput.addEventListener('change', async (event) => {
     const dataSelecionada = event.target.value;
     if (dataSelecionada) {
-        // Busca os horários ocupados para a data selecionada
         const horariosAgendados = await buscarHorariosAgendadosParaData(dataSelecionada);
-        // Exibe os horários disponíveis e ocupados
-        exibirHorariosDisponiveis(horariosAgendados);
+        exibirHorariosDisponiveis(horariosAgendados, duracaoTotalSelecionada, horariosDisponiveisDiv, dataSelecionada, 'hora-agendamento');
     } else {
-        horariosDisponiveisDiv.innerHTML = '';   // Limpa os horários quando não houver data selecionada
+        horariosDisponiveisDiv.innerHTML = '';
     }
-    
 });
 
-// === Agendamento - Submit do Formulário ===
+// === Agendamento de Pacotes ===
+let selectedPacoteDates = [];
+let dateInputCount = 0;
+
+function addNewDateInput() {
+    dateInputCount++;
+    const newDateItem = document.createElement('div');
+    newDateItem.classList.add('data-pacote-item');
+    newDateItem.innerHTML = `
+        <label for="datas-pacote-${dateInputCount}">Escolha a Data:</label>
+        <input type="date" id="datas-pacote-${dateInputCount}" class="datas-pacote" required />
+        <button type="button" class="remove-date-btn">Remover</button>
+    `;
+    datasPacoteContainer.appendChild(newDateItem);
+
+    // Add event listener for the new date input
+    const newDateInput = newDateItem.querySelector(`#datas-pacote-${dateInputCount}`);
+    newDateInput.addEventListener('change', async () => {
+        const dataSelecionada = newDateInput.value;
+        if (dataSelecionada && servicoPacoteSelect.value) {
+            if (!selectedPacoteDates.includes(dataSelecionada)) {
+                selectedPacoteDates.push(dataSelecionada);
+                const servico = servicoPacoteSelect.value;
+                const duracao = duracaoServicos[servico] || 60;
+                const tempContainer = document.createElement('div');
+                tempContainer.id = `horarios-pacote-${dataSelecionada}`;
+                await exibirHorariosDisponiveis(
+                    await buscarHorariosAgendadosParaData(dataSelecionada),
+                    duracao,
+                    tempContainer,
+                    dataSelecionada,
+                    `hora-pacote-${dataSelecionada}`
+                );
+                horariosPacoteDiv.appendChild(tempContainer);
+            }
+        }
+    });
+
+    // Add event listener for the remove button
+    const removeBtn = newDateItem.querySelector('.remove-date-btn');
+    removeBtn.addEventListener('click', () => {
+        const dataSelecionada = newDateInput.value;
+        if (dataSelecionada) {
+            selectedPacoteDates = selectedPacoteDates.filter(date => date !== dataSelecionada);
+            const horarioContainer = document.getElementById(`horarios-pacote-${dataSelecionada}`);
+            if (horarioContainer) horarioContainer.remove();
+        }
+        newDateItem.remove();
+    });
+}
+
+adicionarDataPacoteBtn.addEventListener('click', addNewDateInput);
+
+// Initial date input event listener
+document.querySelector('#datas-pacote-0').addEventListener('change', async (event) => {
+    const dataSelecionada = event.target.value;
+    if (dataSelecionada && servicoPacoteSelect.value) {
+        if (!selectedPacoteDates.includes(dataSelecionada)) {
+            selectedPacoteDates.push(dataSelecionada);
+            const servico = servicoPacoteSelect.value;
+            const duracao = duracaoServicos[servico] || 60;
+            const tempContainer = document.createElement('div');
+            tempContainer.id = `horarios-pacote-${dataSelecionada}`;
+            await exibirHorariosDisponiveis(
+                await buscarHorariosAgendadosParaData(dataSelecionada),
+                duracao,
+                tempContainer,
+                dataSelecionada,
+                `hora-pacote-${dataSelecionada}`
+            );
+            horariosPacoteDiv.appendChild(tempContainer);
+        }
+    }
+});
+
+pacoteForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const user = auth.currentUser;
+    const servico = servicoPacoteSelect.value;
+
+    if (!user) {
+        alert('Você precisa estar logado para agendar.');
+        return;
+    }
+
+    if (!servico) {
+        alert('Selecione um serviço para o pacote.');
+        return;
+    }
+
+    if (selectedPacoteDates.length === 0) {
+        alert('Selecione pelo menos uma data para o pacote.');
+        return;
+    }
+
+    const hoje = new Date();
+    let agendamentosBemSucedidos = 0;
+
+    for (const data of selectedPacoteDates) {
+        const dataSelecionada = new Date(data);
+        if (dataSelecionada < hoje.setHours(0, 0, 0, 0)) {
+            alert(`Não é possível agendar para a data passada: ${data}.`);
+            continue;
+        }
+
+        const horaAgendamento = document.getElementById(`hora-pacote-${data}`)?.value;
+        if (!horaAgendamento) {
+            alert(`Selecione um horário para a data ${data}.`);
+            return;
+        }
+
+        try {
+            const q = query(
+                collection(db, "agendamentos"),
+                where("data", "==", horaAgendamento),
+                where("status", "==", "pendente")
+            );
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
+                await addDoc(collection(db, "agendamentos"), {
+                    uid: user.uid,
+                    servicos: [servico],
+                    data: horaAgendamento,
+                    status: "pendente",
+                    createdAt: serverTimestamp(),
+                });
+
+                const dataAgendamento = horaAgendamento.split('T')[0];
+                const horario = horaAgendamento.split('T')[1]?.slice(0, 5);
+                enviarEmailConfirmacao(user, [servico], dataAgendamento, horario);
+                agendamentosBemSucedidos++;
+            } else {
+                alert(`O horário selecionado para ${data} já está ocupado. Escolha outro horário.`);
+            }
+        } catch (error) {
+            console.error(`Erro ao agendar para ${data}:`, error);
+            alert(`Erro ao agendar para ${data}. Tente novamente.`);
+        }
+    }
+
+    if (agendamentosBemSucedidos > 0) {
+        alert(`Pacote agendado com sucesso para ${agendamentosBemSucedidos} data(s)!`);
+        pacoteForm.reset();
+        horariosPacoteDiv.innerHTML = '';
+        selectedPacoteDates = [];
+        datasPacoteContainer.innerHTML = `
+            <div class="data-pacote-item">
+                <label for="datas-pacote-0">Escolha a Data:</label>
+                <input type="date" id="datas-pacote-0" class="datas-pacote" required />
+            </div>
+        `;
+        dateInputCount = 0;
+    }
+});
+
+// === Agendamento - Submit do Formulário (Normal) ===
 form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
     const dataHoraCompleta = document.getElementById("hora-agendamento")?.value;
     const user = auth.currentUser;
 
-    const duracaoTotalAgendada = duracaoTotalSelecionada;
-if (user && (servicosSelecionadosArray.length > 0 ) && dataHoraCompleta) {
-
+    if (user && (servicosSelecionadosArray.length > 0) && dataHoraCompleta) {
         const dataAgendamento = dataHoraCompleta.split('T')[0];
         const horaAgendamento = dataHoraCompleta.split('T')[1]?.slice(0, 5);
         const hoje = new Date();
@@ -325,23 +475,17 @@ if (user && (servicosSelecionadosArray.length > 0 ) && dataHoraCompleta) {
                     status: "pendente",
                     createdAt: serverTimestamp(),
                 });
-                
 
-                // ✅ Envia o e-mail de confirmação aqui
                 enviarEmailConfirmacao(user, servicosSelecionadosArray, dataAgendamento, horaAgendamento);
 
                 alert("Seu agendamento foi realizado com sucesso para os serviços selecionados!");
 
-                // Limpa os dados e reseta interface
-               // Limpa os dados e reseta interface
                 servicosSelecionadosArray = [];
                 secaoAgendamento.style.display = 'none';
                 secaoServicosListados.style.display = 'block';
                 checkboxesServicos.forEach(cb => cb.checked = false);
                 botaoContinuarAgendamento.style.display = 'none';
-                horariosDisponiveisDiv.innerHTML = ''
-            ;
-
+                horariosDisponiveisDiv.innerHTML = '';
             } else {
                 alert("O horário selecionado já está ocupado. Por favor, escolha outro horário.");
             }
@@ -354,15 +498,14 @@ if (user && (servicosSelecionadosArray.length > 0 ) && dataHoraCompleta) {
     }
 });
 
-
 // === Registro ===
 registerBtn.addEventListener("click", () => {
     registerModal.style.display = "block";
     registerErrorMessage.style.display = "none";
     modalEmailInput.value = "";
     modalPasswordInput.value = "";
-    modalNameInput.value = ""; // Limpa o nome
-    modalPhoneInput.value = ""; // Limpa o telefone
+    modalNameInput.value = "";
+    modalPhoneInput.value = "";
 });
 
 closeModalBtn.addEventListener("click", () => registerModal.style.display = "none");
@@ -384,7 +527,7 @@ modalRegisterBtn.addEventListener("click", () => {
             displayName: name,
             phone,
             email,
-            role: "user" // Adiciona a role padrão "user"
+            role: "user"
         }))
         .then(() => {
             alert("Cadastro bem-sucedido!");
@@ -429,12 +572,10 @@ document.getElementById("logout-btn").addEventListener("click", () => {
     signOut(auth)
         .then(() => {
             alert("Você saiu!");
-            // Redireciona para a página inicial do GitHub Pages
-            window.location.href = "/AteliedasUnhas/"; // ou index.html se estiver testando local
+            window.location.href = "/AteliedasUnhas/";
         })
         .catch((error) => alert("Erro ao sair: " + error.message));
 });
-
 
 // === Estado de Autenticação ===
 onAuthStateChanged(auth, async (user) => {
@@ -445,21 +586,20 @@ onAuthStateChanged(auth, async (user) => {
         form.style.display = "block";
         meusAgendamentosSection.style.display = 'block';
 
-        // Consulta o documento do usuário no Firestore para obter a role (agora isAdmin)
         const userDocSnapshot = await getDocs(query(collection(db, "users"), where("uid", "==", user.uid)));
 
         if (!userDocSnapshot.empty) {
             const userData = userDocSnapshot.docs[0].data();
             console.log("Dados do usuário:", userData);
-            console.log("isAdmin:", userData.isAdmin); // Verifique o valor de isAdmin
+            console.log("isAdmin:", userData.isAdmin);
 
-            if (userData.isAdmin === true) { // Ajuste a condição para verificar o booleano true
-                adminLinkContainer.style.display = 'block'; // Exibe o link de administrador
+            if (userData.isAdmin === true) {
+                adminLinkContainer.style.display = 'block';
             } else {
-                adminLinkContainer.style.display = 'none'; // Oculta o link para usuários normais
+                adminLinkContainer.style.display = 'none';
             }
         } else {
-            adminLinkContainer.style.display = 'none'; // Oculta se não encontrar os dados do usuário
+            adminLinkContainer.style.display = 'none';
         }
 
         const q = query(collection(db, "agendamentos"), where("uid", "==", user.uid));
@@ -473,9 +613,10 @@ onAuthStateChanged(auth, async (user) => {
         userInfo.style.display = "none";
         form.style.display = "none";
         meusAgendamentosSection.style.display = 'none';
-        adminLinkContainer.style.display = 'none'; // Garante que o link esteja oculto ao deslogar
+        adminLinkContainer.style.display = 'none';
     }
 });
+
 // === Exibição de Agendamentos ===
 function exibirAgendamentos(agendamentos) {
     listaDeAgendamentosDiv.innerHTML = '';
@@ -504,16 +645,12 @@ function exibirAgendamentos(agendamentos) {
 }
 
 // === Botão de Voltar ao Topo ===
-document.getElementById("back-to-top").addEventListener("click", () => {
+document.getElementById("back-to-top")?.addEventListener("click", () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
 });
 
-
-// === EmailJS Setup ===
-
-
 // === Função para Enviar E-mail ===
-function enviarEmailConfirmacao(usuario, servicosSelecionados, data, horario = []) {
+function enviarEmailConfirmacao(usuario, servicosSelecionados, data, horario) {
     const emailParams = {
         to_email: usuario.email,
         user_name: usuario.displayName,
@@ -523,15 +660,11 @@ function enviarEmailConfirmacao(usuario, servicosSelecionados, data, horario = [
     };
 
     emailjs.send('service_e1vy49h', 'template_em25s54', emailParams)
-    .then((response) => {
-        console.log('E-mail enviado com sucesso:', response);
-        alert('E-mail enviado com sucesso!');
-    })
-    .catch((error) => {
-        console.error('Erro ao enviar e-mail:', error);
-        alert('Erro ao enviar e-mail. Veja o console para detalhes.');
-    });
+        .then((response) => {
+            console.log('E-mail enviado com sucesso:', response);
+        })
+        .catch((error) => {
+            console.error('Erro ao enviar e-mail:', error);
+            alert('Erro ao enviar e-mail para ' + data + '. Veja o console para detalhes.');
+        });
 }
-
-
-    

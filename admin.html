@@ -40,23 +40,17 @@
 
         const adminContent = document.getElementById("admin-content");
         const accessDenied = document.getElementById("access-denied");
-        const listaDeAgendamentosAdminDiv = document.getElementById(
-            "lista-de-agendamentos-admin"
-        );
-        const formularioEdicaoAgendamentoDiv = document.getElementById(
-            "formulario-edicao-agendamento"
-        );
-        const formEditarAgendamento = document.getElementById(
-            "form-editar-agendamento"
-        );
-        const editarAgendamentoIdInput = document.getElementById(
-            "editar-agendamento-id"
-        );
+        const listaDeAgendamentosAdminDiv = document.getElementById("lista-de-agendamentos-admin");
+        const formularioEdicaoAgendamentoDiv = document.getElementById("formulario-edicao-agendamento");
+        const formEditarAgendamento = document.getElementById("form-editar-agendamento");
+        const editarAgendamentoIdInput = document.getElementById("editar-agendamento-id");
         const editarDataInput = document.getElementById("editar-data");
         const editarHorarioSelect = document.getElementById("editar-horario");
         const editarStatusSelect = document.getElementById("editar-status");
         const salvarEdicaoBtn = document.getElementById("salvar-edicao-btn");
         const cancelarEdicaoBtn = document.getElementById("cancelar-edicao-btn");
+        const formularioNovoAgendamentoDiv = document.getElementById("formulario-novo-agendamento");
+        const formNovoAgendamento = document.getElementById("form-novo-agendamento");
 
         let agendamentosList = [];
         let usuariosList = [];
@@ -126,7 +120,6 @@
                 }
             });
 
-            // Preencher horários disponíveis se uma data já estiver definida
             if (data) {
                 dataInput.dispatchEvent(new Event("change"));
                 if (horario) {
@@ -159,21 +152,37 @@
             return false;
         }
 
+        async function carregarUsuarios() {
+            const usuariosRef = collection(db, "users");
+            const querySnapshot = await getDocs(usuariosRef);
+            usuariosList = [];
+            querySnapshot.forEach((doc) => {
+                usuariosList.push({ id: doc.id, ...doc.data() });
+            });
+
+            const usuarioSelect = document.getElementById("novo-usuario");
+            usuarioSelect.innerHTML = '<option value="">Selecione um usuário</option>';
+            usuariosList.forEach((usuario) => {
+                const option = document.createElement("option");
+                option.value = usuario.uid;
+                option.textContent = usuario.displayName || "Sem nome";
+                usuarioSelect.appendChild(option);
+            });
+        }
+
         async function exibirAgendamentosAdmin(agendamentos, filtros = {}) {
             listaDeAgendamentosAdminDiv.innerHTML = "";
 
-            // Aplicar filtros
             let agendamentosFiltrados = [...agendamentos];
 
-            // Filtro por intervalo de datas (apenas dia)
             if (filtros.dataInicio || filtros.dataFim) {
                 const dataInicio = filtros.dataInicio
                     ? new Date(filtros.dataInicio)
-                    : new Date(-8640000000000000); // Data mínima
+                    : new Date(-8640000000000000);
                 dataInicio.setHours(0, 0, 0, 0);
                 const dataFim = filtros.dataFim
                     ? new Date(filtros.dataFim)
-                    : new Date(8640000000000000); // Data máxima
+                    : new Date(8640000000000000);
                 dataFim.setHours(23, 59, 59, 999);
 
                 agendamentosFiltrados = agendamentosFiltrados.filter((agendamento) => {
@@ -182,7 +191,6 @@
                 });
             }
 
-            // Filtro por nome do usuário
             if (filtros.nome) {
                 const nomeLower = filtros.nome.toLowerCase();
                 const agendamentosComNomes = await Promise.all(
@@ -301,16 +309,12 @@
                         editarDataInput.value = dataObj.toISOString().slice(0, 10);
                         editarStatusSelect.value = "pendente";
 
-                        // Extrair o horário original exato
                         const horaOriginal = `${dataObj.getHours().toString().padStart(2, '0')}:${dataObj.getMinutes().toString().padStart(2, '0')}`;
 
-                        // Atualizar horários disponíveis, garantindo que o horário original esteja incluído
                         await atualizarHorariosDisponiveis(dataObj, agendamentoId);
                         editarHorarioSelect.value = horaOriginal;
 
-                        // Verificar se o horário original foi selecionado corretamente
                         if (!editarHorarioSelect.value) {
-                            // Se o horário original não estiver na lista, adicioná-lo manualmente
                             const option = document.createElement("option");
                             option.value = horaOriginal;
                             option.textContent = horaOriginal;
@@ -380,8 +384,8 @@
             const agendamentosRef = collection(db, "agendamentos");
             const q = query(
                 agendamentosRef,
-                where('data', '>=', inicioDoDia.getTime()),
-                where('data', '<=', fimDoDia.getTime())
+                where('data', '>=', inicioDoDia.toISOString()),
+                where('data', '<=', fimDoDia.toISOString())
             );
 
             const querySnapshot = await getDocs(q);
@@ -392,14 +396,13 @@
             return agendamentosNaData;
         }
 
-        function gerarHorariosDisponiveis(dataSelecionada, agendamentosNaData, agendamentoIdAtual) {
-            const horariosFuncionamentoInicio = 8; // 8h
-            const horariosFuncionamentoFim = 17;  // 17h
-            const intervaloAgendamentoMinutos = 30;
+        function gerarHorariosDisponiveis(dataSelecionada, agendamentosNaData, agendamentoIdAtual, duracaoTotal) {
+            const horariosFuncionamentoInicio = 8;
+            const horariosFuncionamentoFim = 17;
+            const intervaloAgendamentoMinutos = 15;
             const horariosPossiveis = [];
             const horariosOcupados = new Set();
 
-            // Gerar todos os horários possíveis (8:00 a 16:30, em intervalos de 30 minutos)
             for (let hora = horariosFuncionamentoInicio; hora < horariosFuncionamentoFim; hora++) {
                 for (let minuto = 0; minuto < 60; minuto += intervaloAgendamentoMinutos) {
                     const horario = `${hora.toString().padStart(2, '0')}:${minuto.toString().padStart(2, '0')}`;
@@ -407,7 +410,6 @@
                 }
             }
 
-            // Encontrar o horário original do agendamento atual
             let horarioOriginal = null;
             const agendamentoAtual = agendamentosNaData.find(ag => ag.id === agendamentoIdAtual);
             if (agendamentoAtual) {
@@ -415,69 +417,79 @@
                 horarioOriginal = `${dataOriginal.getHours().toString().padStart(2, '0')}:${dataOriginal.getMinutes().toString().padStart(2, '0')}`;
             }
 
-            // Calcular horários ocupados com base na duração dos serviços
             agendamentosNaData
                 .filter(agendamento => agendamento.id !== agendamentoIdAtual)
                 .forEach(agendamento => {
                     const inicio = new Date(agendamento.data);
-                    const horaInicio = inicio.getHours();
-                    const minutoInicio = inicio.getMinutes();
-
-                    // Calcular duração total do agendamento
-                    let duracaoTotal = 0;
+                    let duracaoAgendamento = 0;
                     if (Array.isArray(agendamento.servicos)) {
                         agendamento.servicos.forEach(servico => {
-                            duracaoTotal += duracaoServicos[servico] || 30; // 30 minutos como padrão se serviço não for encontrado
+                            duracaoAgendamento += duracaoServicos[servico] || 60;
                         });
                     } else {
-                        duracaoTotal = 30; // Duração padrão se não houver serviços
+                        duracaoAgendamento = 60;
                     }
 
-                    // Calcular o número de slots de 30 minutos necessários
-                    const slotsNecessarios = Math.ceil(duracaoTotal / intervaloAgendamentoMinutos);
-
-                    // Bloquear todos os slots de 30 minutos dentro do intervalo
-                    for (let slot = 0; slot < slotsNecessarios; slot++) {
-                        const minutosOffset = minutoInicio + (slot * intervaloAgendamentoMinutos);
-                        const horaSlot = horaInicio + Math.floor(minutosOffset / 60);
-                        const minutoSlot = minutosOffset % 60;
-                        if (horaSlot < horariosFuncionamentoFim) {
-                            const horarioOcupado = `${horaSlot.toString().padStart(2, '0')}:${minutoSlot.toString().padStart(2, '0')}`;
-                            horariosOcupados.add(horarioOcupado);
-                        }
+                    const fim = new Date(inicio.getTime() + duracaoAgendamento * 60 * 1000);
+                    let currentTime = new Date(inicio);
+                    while (currentTime < fim) {
+                        const horaFormatada = String(currentTime.getHours()).padStart(2, '0');
+                        const minutoFormatada = String(currentTime.getMinutes()).padStart(2, '0');
+                        horariosOcupados.add(`${horaFormatada}:${minutoFormatada}`);
+                        currentTime.setMinutes(currentTime.getMinutes() + intervaloAgendamentoMinutos);
                     }
                 });
 
-            // Filtrar horários disponíveis, garantindo que o horário original esteja incluído
-            let horariosDisponiveis = horariosPossiveis.filter(horario => !horariosOcupados.has(horario));
+            const horariosDisponiveis = [];
+            horariosPossiveis.forEach(horario => {
+                const [h, m] = horario.split(':').map(Number);
+                const inicioAgendamento = new Date(dataSelecionada);
+                inicioAgendamento.setHours(h, m, 0, 0);
+                const fimAgendamento = new Date(inicioAgendamento.getTime() + duracaoTotal * 60 * 1000);
+
+                let horarioLivre = true;
+                let currentTime = new Date(inicioAgendamento);
+                while (currentTime < fimAgendamento) {
+                    const horaAtual = String(currentTime.getHours()).padStart(2, '0');
+                    const minutoAtual = String(currentTime.getMinutes()).padStart(2, '0');
+                    if (horariosOcupados.has(`${horaAtual}:${minutoAtual}`)) {
+                        horarioLivre = false;
+                        break;
+                    }
+                    currentTime.setMinutes(currentTime.getMinutes() + intervaloAgendamentoMinutos);
+                }
+
+                if (horarioLivre) {
+                    horariosDisponiveis.push(horario);
+                }
+            });
+
             if (horarioOriginal && !horariosDisponiveis.includes(horarioOriginal)) {
                 horariosDisponiveis.push(horarioOriginal);
-                horariosDisponiveis.sort(); // Ordenar para manter a sequência correta
+                horariosDisponiveis.sort();
             }
 
             return horariosDisponiveis;
         }
 
-        async function atualizarHorariosDisponiveis(dataSelecionada, agendamentoIdAtual) {
+        async function atualizarHorariosDisponiveis(dataSelecionada, agendamentoIdAtual, duracaoTotal) {
             const agendamentosNaData = await buscarAgendamentosPorData(dataSelecionada);
-            const horariosDisponiveis = gerarHorariosDisponiveis(dataSelecionada, agendamentosNaData, agendamentoIdAtual);
+            const horariosDisponiveis = gerarHorariosDisponiveis(dataSelecionada, agendamentosNaData, agendamentoIdAtual, duracaoTotal);
 
-            editarHorarioSelect.innerHTML = '<option value="">Selecione um horário</option>';
+            const horarioSelect = document.getElementById("novo-horario");
+            horarioSelect.innerHTML = '<option value="">Selecione um horário</option>';
             horariosDisponiveis.forEach(horario => {
                 const option = document.createElement("option");
                 option.value = horario;
                 option.textContent = horario;
-                editarHorarioSelect.appendChild(option);
+                horarioSelect.appendChild(option);
             });
 
             if (horariosDisponiveis.length === 0) {
-                const option = document.createElement("option");
-                option.value = "";
-                option.textContent = "Nenhum horário disponível";
-                editarHorarioSelect.appendChild(option);
-                editarHorarioSelect.disabled = true;
+                horarioSelect.innerHTML = '<option value="">Nenhum horário disponível</option>';
+                horarioSelect.disabled = true;
             } else {
-                editarHorarioSelect.disabled = false;
+                horarioSelect.disabled = false;
             }
         }
 
@@ -487,6 +499,7 @@
                 if (isAdmin) {
                     adminContent.style.display = "block";
                     accessDenied.style.display = "none";
+                    await carregarUsuarios();
                     const q = collection(db, "agendamentos");
                     onSnapshot(q, (querySnapshot) => {
                         agendamentosList = [];
@@ -545,12 +558,11 @@
                 });
             }
 
-            // Atualizar horários disponíveis quando a data mudar
             if (editarDataInput) {
                 editarDataInput.addEventListener("change", async () => {
                     const dataSelecionada = editarDataInput.value;
                     if (dataSelecionada) {
-                        await atualizarHorariosDisponiveis(new Date(dataSelecionada), editarAgendamentoIdInput.value);
+                        await atualizarHorariosDisponiveis(new Date(dataSelecionada), editarAgendamentoIdInput.value, 0);
                     } else {
                         editarHorarioSelect.innerHTML = '<option value="">Selecione uma data primeiro</option>';
                         editarHorarioSelect.disabled = true;
@@ -594,13 +606,13 @@
 
                         const agendamentoRef = doc(db, "agendamentos", agendamentoId);
                         await updateDoc(agendamentoRef, {
-                            data: novaData.getTime(),
+                            data: novaData.toISOString(),
                             status: novoStatus,
                         });
 
                         for (const horario of novosHorarios) {
                             await addDoc(collection(db, "agendamentos"), {
-                                data: horario,
+                                data: new Date(horario).toISOString(),
                                 status: novoStatus,
                                 confirmacaoEnviada: false,
                                 servicos: agendamentoOriginal.servicos || [],
@@ -621,6 +633,112 @@
             if (cancelarEdicaoBtn) {
                 cancelarEdicaoBtn.addEventListener("click", () => {
                     formularioEdicaoAgendamentoDiv.style.display = "none";
+                });
+            }
+
+            const novoDataInput = document.getElementById("novo-data");
+            if (novoDataInput) {
+                novoDataInput.addEventListener("change", async () => {
+                    const dataSelecionada = novoDataInput.value;
+                    if (dataSelecionada) {
+                        const servicosSelecionados = Array.from(
+                            document.querySelectorAll(".novo-servico-checkbox:checked")
+                        ).map(cb => cb.value);
+                        let duracaoTotal = 0;
+                        servicosSelecionados.forEach(servico => {
+                            duracaoTotal += duracaoServicos[servico] || 60;
+                        });
+                        await atualizarHorariosDisponiveis(dataSelecionada, null, duracaoTotal);
+                    } else {
+                        const horarioSelect = document.getElementById("novo-horario");
+                        horarioSelect.innerHTML = '<option value="">Selecione uma data primeiro</option>';
+                        horarioSelect.disabled = true;
+                    }
+                });
+            }
+
+            if (formNovoAgendamento) {
+                formNovoAgendamento.addEventListener("submit", async (e) => {
+                    e.preventDefault();
+
+                    const usuarioUid = document.getElementById("novo-usuario").value;
+                    const servicosSelecionados = Array.from(
+                        document.querySelectorAll(".novo-servico-checkbox:checked")
+                    ).map(cb => cb.value);
+                    const dataSelecionada = document.getElementById("novo-data").value;
+                    const horarioSelecionado = document.getElementById("novo-horario").value;
+
+                    if (!usuarioUid) {
+                        alert("Selecione um usuário.");
+                        return;
+                    }
+                    if (servicosSelecionados.length === 0) {
+                        alert("Selecione pelo menos um serviço.");
+                        return;
+                    }
+                    if (!dataSelecionada || !horarioSelecionado) {
+                        alert("Selecione uma data e um horário.");
+                        return;
+                    }
+
+                    const [hora, minuto] = horarioSelecionado.split(":");
+                    const dataAgendamento = new Date(dataSelecionada);
+                    dataAgendamento.setHours(parseInt(hora), parseInt(minuto), 0, 0);
+
+                    const hoje = new Date();
+                    if (dataAgendamento < hoje.setHours(0, 0, 0, 0)) {
+                        alert("Não é possível agendar para uma data passada.");
+                        return;
+                    }
+
+                    try {
+                        const q = query(
+                            collection(db, "agendamentos"),
+                            where("data", "==", dataAgendamento.toISOString()),
+                            where("status", "==", "pendente")
+                        );
+                        const querySnapshot = await getDocs(q);
+
+                        if (!querySnapshot.empty) {
+                            alert("O horário selecionado já está ocupado. Escolha outro horário.");
+                            return;
+                        }
+
+                        await addDoc(collection(db, "agendamentos"), {
+                            uid: usuarioUid,
+                            servicos: servicosSelecionados,
+                            data: dataAgendamento.toISOString(),
+                            status: "pendente",
+                            confirmacaoEnviada: false,
+                            createdAt: new Date().getTime(),
+                        });
+
+                        alert("Agendamento criado com sucesso!");
+                        formNovoAgendamento.reset();
+                        const horarioSelect = document.getElementById("novo-horario");
+                        horarioSelect.innerHTML = '<option value="">Selecione uma data primeiro</option>';
+                        formularioNovoAgendamentoDiv.style.display = "none";
+                    } catch (error) {
+                        console.error("Erro ao criar agendamento:", error);
+                        alert("Erro ao criar o agendamento.");
+                    }
+                });
+            }
+
+            const cancelarNovoBtn = document.getElementById("cancelar-novo-btn");
+            if (cancelarNovoBtn) {
+                cancelarNovoBtn.addEventListener("click", () => {
+                    formularioNovoAgendamentoDiv.style.display = "none";
+                    formNovoAgendamento.reset();
+                    const horarioSelect = document.getElementById("novo-horario");
+                    horarioSelect.innerHTML = '<option value="">Selecione uma data primeiro</option>';
+                });
+            }
+
+            const abrirNovoAgendamentoBtn = document.getElementById("abrir-novo-agendamento");
+            if (abrirNovoAgendamentoBtn) {
+                abrirNovoAgendamentoBtn.addEventListener("click", () => {
+                    formularioNovoAgendamentoDiv.style.display = "block";
                 });
             }
         });
@@ -651,7 +769,46 @@
             <button type="button" id="limpar-filtro-btn">Limpar Filtro</button>
         </form>
     </div>
+    <button id="abrir-novo-agendamento">Novo Agendamento</button>
     <div id="lista-de-agendamentos-admin"></div>
+
+    <div id="formulario-novo-agendamento" style="display: none;">
+        <h2>Novo Agendamento</h2>
+        <form id="form-novo-agendamento">
+            <div style="margin-bottom: 20px;">
+                <label for="novo-usuario">Usuário:</label>
+                <select id="novo-usuario" required>
+                    <option value="">Selecione um usuário</option>
+                </select>
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label>Serviços:</label>
+                <div style="display: flex; flex-direction: column;">
+                    <label><input type="checkbox" class="novo-servico-checkbox" value="Manicure - Pé e Mão"> Manicure - Pé e Mão</label>
+                    <label><input type="checkbox" class="novo-servico-checkbox" value="Manicure - Mão Simples"> Manicure - Mão Simples</label>
+                    <label><input type="checkbox" class="novo-servico-checkbox" value="Pé Simples"> Pé Simples</label>
+                    <label><input type="checkbox" class="novo-servico-checkbox" value="ESMALTAÇÃO EM GEL C/ Cutilagem"> ESMALTAÇÃO EM GEL C/ Cutilagem</label>
+                    <label><input type="checkbox" class="novo-servico-checkbox" value="Esmaltação Mão"> Esmaltação Mão</label>
+                    <label><input type="checkbox" class="novo-servico-checkbox" value="Alongamento Speed Tip Gel"> Alongamento Speed Tip Gel</label>
+                    <label><input type="checkbox" class="novo-servico-checkbox" value="PLÁSTICA DOS PÉS"> PLÁSTICA DOS PÉS</label>
+                    <label><input type="checkbox" class="novo-servico-checkbox" value="Aplicação Unha Postiça"> Aplicação Unha Postiça</label>
+                    <label><input type="checkbox" class="novo-servico-checkbox" value="SPA DOS PÉS"> SPA DOS PÉS</label>
+                </div>
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label for="novo-data">Data:</label>
+                <input type="date" id="novo-data" required />
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label for="novo-horario">Horário:</label>
+                <select id="novo-horario" required>
+                    <option value="">Selecione uma data primeiro</option>
+                </select>
+            </div>
+            <button type="submit">Criar Agendamento</button>
+            <button type="button" id="cancelar-novo-btn">Cancelar</button>
+        </form>
+    </div>
 
     <div id="formulario-edicao-agendamento" style="display: none;">
         <h2>Editar Agendamento</h2>
@@ -689,5 +846,6 @@
     <p>Você não tem permissão para acessar esta página.</p>
     <p><a href="/index.html">Voltar para a página inicial</a></p>
 </div>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9330e1833c7fc006',t:'MTc0NTExMjY3My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
 </body>
 </html>
