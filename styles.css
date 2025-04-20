@@ -1,9 +1,10 @@
 /* Estilos gerais */
 * {
-    box-sizing: border-box;}
+    box-sizing: border-box;
+}
 
 body {
-    overflow-x: hidden; /* Garante que o conteúdo extra não cause barra de rolagem horizontal */
+    overflow-x: hidden;
     font-family: 'Montserrat', sans-serif;
     margin: 0;
     padding: 0;
@@ -11,120 +12,124 @@ body {
     color: #333;
     line-height: 1.6;
 }
+
 .modal-info {
     position: fixed;
-    top: 50%; left: 50%;
+    top: 50%;
+    left: 50%;
     transform: translate(-50%, -50%);
     background: #fff;
     width: 90%;
     max-width: 600px;
-    max-height: 90vh; /* altura máxima da tela */
-    overflow-y: auto; /* rolagem vertical */
+    max-height: 90vh;
+    overflow-y: auto;
     padding: 20px;
     border-radius: 12px;
     z-index: 999;
     box-shadow: 0 4px 20px rgba(0,0,0,0.2);
     font-family: sans-serif;
     scroll-behavior: smooth;
-  }
-  
-  .modal-header {
+    -webkit-overflow-scrolling: touch;
+}
+
+.modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 10px;
-  }
-  
-  .btn-fechar-modal {
+}
+
+.btn-fechar-modal {
     background: none;
     border: none;
     font-size: 24px;
     cursor: pointer;
     line-height: 1;
-  }
-  
-  .modal-overlay-info {
+}
+
+.modal-overlay-info {
     position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     background: rgba(0,0,0,0.4);
     z-index: 998;
-  }
-  
-  
-  .modal-header h2 {
+}
+
+.modal-header h2 {
     margin: 0;
-  }
-  
- 
-  .endereco {
+}
+
+.endereco {
     font-size: 14px;
     margin: 10px 0;
-  }
-  
-  .mapa-container {
+}
+
+.mapa-container {
     border-radius: 8px;
     overflow: hidden;
     margin-bottom: 20px;
-  }
-  
-  .info-columns {
+}
+
+.info-columns {
     display: flex;
     justify-content: space-between;
     margin-bottom: 20px;
     font-size: 14px;
-  }
-  
-  .info-columns h4 {
+}
+
+.info-columns h4 {
     margin-bottom: 5px;
-  }
-  
-  .sobre-nos, .horarios {
+}
+
+.sobre-nos, .horarios {
     margin-bottom: 20px;
-  }
-  
-  .sobre-nos p {
+}
+
+.sobre-nos p {
     font-size: 14px;
     line-height: 1.5;
-  }
-  
-  .horarios ul {
+}
+
+.horarios ul {
     padding-left: 0;
     list-style: none;
     font-size: 14px;
-  }
-  
-  .horarios li {
+}
+
+.horarios li {
     margin-bottom: 4px;
-  }
-  
-  .profissional {
+}
+
+.profissional {
     text-align: center;
     margin-top: 20px;
-  }
-  
-  .profissional img {
+}
+
+.profissional img {
     width: 60px;
     height: 60px;
     border-radius: 50%;
     object-fit: cover;
     margin-bottom: 5px;
-  }
-  
+}
+
 /* Estilo do contêiner da galeria */
-/* Fundo escuro */
 .modal-overlay-galeria {
     position: fixed;
-    top: 0; left: 0;
-    width: 100vw; height: 100vh;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
     background: rgba(0, 0, 0, 0.5);
     z-index: 998;
-  }
-  
-  /* Janela do modal */
-  .modal-galeria {
+}
+
+.modal-galeria {
     position: fixed;
-    top: 50%; left: 50%;
+    top: 50%;
+    left: 50%;
     transform: translate(-50%, -50%);
     background: #fff;
     padding: 20px;
@@ -133,30 +138,28 @@ body {
     max-width: 90%;
     max-height: 90vh;
     overflow-y: auto;
-  }
-  
-  /* Container das imagens */
-  .galeria-container {
+    -webkit-overflow-scrolling: touch;
+}
+
+.galeria-container {
     display: flex;
     gap: 16px;
     overflow-x: auto;
     margin-top: 20px;
-  }
-  
-  .galeria-container img {
+}
+
+.galeria-container img {
     width: 300px;
     height: auto;
     border-radius: 8px;
-  }
-  
-
-
+}
 
 .home {
     display: flex;
-    justify-content: center; /* alinha horizontalmente */
-    align-items: center;     /* alinha verticalmente */
+    justify-content: center;
+    align-items: center;
 }
+
 .auth-container {
     display: flex;
     align-items: center;
@@ -178,6 +181,8 @@ body {
     position: relative;
     overflow: hidden;
     transition: color 0.3s ease;
+    min-width: 120px;
+    touch-action: manipulation;
 }
 
 #auth-buttons button::before {
@@ -213,13 +218,15 @@ body {
 
 #user-info button#logout-btn {
     background-color: transparent;
-    color: #1F8070; /* Cor vermelha para logout */
+    color: #1F8070;
     border: 1px solid #1F8070;
     padding: 8px 12px;
     border-radius: 5px;
     cursor: pointer;
     font-size: 0.9em;
     transition: background-color 0.3s ease, color 0.3s ease;
+    min-width: 120px;
+    touch-action: manipulation;
 }
 
 #user-info button#logout-btn:hover {
@@ -227,8 +234,6 @@ body {
     color: white;
 }
 
-  
-/* Estilos minimalistas para os modais de Login e Registro */
 /* Estilos modernos para o modal de Login e Registro */
 .modal {
     display: none;
@@ -239,8 +244,8 @@ body {
     width: 100%;
     height: 100%;
     overflow: auto;
-    background-color: rgba(0, 0, 0, 0.7); /* Fundo mais escuro e com maior transparência */
-    backdrop-filter: blur(5px); /* Efeito de desfoque no fundo */
+    background-color: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
     transition: opacity 0.3s ease;
 }
 
@@ -251,10 +256,10 @@ body {
     border-radius: 12px;
     width: 90%;
     max-width: 420px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1); /* Sombras suaves */
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
     position: relative;
     transform: scale(0.9);
-    animation: zoomIn 0.3s ease-out forwards; /* Animação de zoom ao aparecer */
+    animation: zoomIn 0.3s ease-out forwards;
 }
 
 @keyframes zoomIn {
@@ -283,8 +288,8 @@ body {
 .close-button:hover,
 .close-button:focus {
     opacity: 1;
-    color: #e74c3c; /* Cor de destaque no hover */
-    transform: scale(1.2); /* Efeito de zoom no hover */
+    color: #e74c3c;
+    transform: scale(1.2);
 }
 
 .modal h2 {
@@ -293,7 +298,7 @@ body {
     margin-bottom: 25px;
     font-size: 1.8em;
     font-weight: 600;
-    letter-spacing: 0.5px; /* Aumento no espaço entre letras */
+    letter-spacing: 0.5px;
 }
 
 .modal label {
@@ -336,11 +341,13 @@ body {
     font-size: 1.1em;
     font-weight: 600;
     transition: background-color 0.3s ease, transform 0.2s ease;
+    min-width: 120px;
+    touch-action: manipulation;
 }
 
 .modal button:hover {
-    background-color: #16a085; /* Cor de hover mais intensa */
-    transform: translateY(-4px); /* Efeito de elevação */
+    background-color: #16a085;
+    transform: translateY(-4px);
 }
 
 .error-message {
@@ -349,7 +356,6 @@ body {
     font-size: 0.95em;
     text-align: center;
 }
-
 
 .container {
     max-width: 1200px;
@@ -373,6 +379,8 @@ button {
     cursor: pointer;
     font-size: 1rem;
     transition: background-color 0.3s ease;
+    min-width: 120px;
+    touch-action: manipulation;
 }
 
 /* Header */
@@ -405,7 +413,6 @@ header {
     margin: 10;
     display: flex;
 }
-
 
 .nav-bar a {
     color: #555;
@@ -517,21 +524,18 @@ header {
     padding: 0;
     margin: 0;
     display: flex;
-    transform: translateY(20px); /* move 10px pra baixo */
+    transform: translateY(20px);
     transform: translateX(110px);
 }
 
 .info-nav li {
-    
-    margin-left:20px;
-    transform: translateX(-100px);
+    margin-left: 20px;
+    transform: none;
 }
 
 .info-nav li:first-child {
     margin-left: 0;
 }
-
-
 
 .info-nav a {
     color: #555;
@@ -544,14 +548,13 @@ header {
 }
 
 .info-nav li a::before {
-    /* Placeholder para ícones - você precisará adicionar os ícones reais via CSS ou HTML */
     content: "";
     margin-right: 5px;
 }
 
-.info-nav li:nth-child(1) a::before { content: "📷"; } /* Ex: Ícone de câmera */
-.info-nav li:nth-child(2) a::before { content: "ℹ️"; } /* Ex: Ícone de informação */
-.info-nav li:nth-child(3) a::before { content: "⚙️"; } /* Ex: Ícone de coração */
+.info-nav li:nth-child(1) a::before { content: "📷"; }
+.info-nav li:nth-child(2) a::before { content: "ℹ️"; }
+.info-nav li:nth-child(3) a::before { content: "⚙️"; }
 
 /* Barra de Pesquisa */
 .search-container {
@@ -606,7 +609,7 @@ header {
 }
 
 .servicos-container h2::after {
-    content: "▲"; /* Ícone de seta para cima */
+    content: "▲";
     font-size: 0.8rem;
     color: #777;
 }
@@ -618,48 +621,82 @@ header {
 }
 
 .servico-item {
-    display: grid;
-    grid-template-columns: auto 1fr auto;
+    display: flex;
     align-items: center;
-    padding: 8px 0;
+    padding: 12px 0;
     border-bottom: 1px solid #f0f0f0;
-    gap: 15px;
+    transition: background-color 0.2s ease;
+}
+
+.servico-item:hover {
+    background-color: #f2fdfb;
 }
 
 .servico-item:last-child {
     border-bottom: none;
 }
 
-.servico-item::before {
-    content: "○"; /* Círculo não preenchido */
-    color: #777;
-    font-size: 0.8rem;
-    margin-right: 10px;
+.servico-label {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    cursor: pointer;
+}
+
+.selecionar-checkbox {
+    width: 24px;
+    height: 24px;
+    border: 2px solid #053029;
+    border-radius: 6px;
+    background-color: #fff;
+    appearance: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    margin-right: 15px;
+    flex-shrink: 0;
+}
+
+.selecionar-checkbox:checked {
+    border-color: #1F8070;
+    background-color: #1F8070;
+}
+
+.selecionar-checkbox:checked::after {
+    content: '✔';
+    color: #fff;
+    font-size: 16px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
 }
 
 .servico-info {
     display: flex;
     flex-direction: column;
     justify-content: center;
+    flex-grow: 1;
 }
 
 .nome-servico {
     font-weight: bold;
     color: #333;
-    font-size: 0.9rem;
-    margin-bottom: 2px;
+    font-size: 0.95rem;
+    margin-bottom: 4px;
 }
 
 .preco-tempo {
     color: #777;
-    font-size: 0.8rem;
-    text-align: right;
+    font-size: 0.85rem;
+    text-align: left;
 }
 
 .preco-tempo .tempo {
     font-style: italic;
-    font-size: 0.7rem;
-    display: block;
+    font-size: 0.75rem;
+    display: inline;
+    margin-left: 8px;
 }
 
 .btn-voltar {
@@ -671,19 +708,18 @@ header {
     border: 1px solid transparent;
     border-radius: 4px;
     transition: all 0.2s ease;
-    margin-top: 30px; /* <-- aqui você controla o quanto ele desce */
+    margin-top: 30px;
     display: inline-block;
-  }
-  
-  .btn-voltar:hover {
+}
+
+.btn-voltar:hover {
     background-color: #f2fdfb;
     border-color: #bfd3c0;
     text-decoration: underline;
-  }
+}
 
-
-  .whatsapp-btn {
-    background-color: #25d366; /* Cor do botão do WhatsApp */
+.whatsapp-btn {
+    background-color: #25d366;
     color: white;
     border: none;
     padding: 10px 20px;
@@ -691,45 +727,13 @@ header {
     cursor: pointer;
     margin-top: 10px;
     border-radius: 5px;
+    min-width: 120px;
+    touch-action: manipulation;
 }
 
 .whatsapp-btn:hover {
-    background-color: #128c7e; /* Cor do botão ao passar o mouse */
+    background-color: #128c7e;
 }
-
-  
-/* Estilo do checkbox */
-/* Estilo base do checkbox */
-.selecionar-checkbox {
-    width: 20px;
-    height: 20px;
-    border: 2px solid #053029;
-    border-radius: 4px;
-    background-color: #fff;
-    appearance: none;
-    cursor: pointer;
-    transition: border-color 0.3s;
-    position: relative;
-  }
-  
-  /* Quando o checkbox estiver marcado: apenas muda a borda, sem pintar o fundo */
-  .selecionar-checkbox:checked {
-    border-color: #070707;
-  }
-  
-  /* Símbolo de check (✔) posicionado dentro do checkbox */
-  .selecionar-checkbox:checked::after {
-    content: '✔';
-    color: #000000;
-    font-size: 13px;
-    position: absolute;
-    top: 0;
-    left: 3px;
-  }
-  
-
-
-
 
 .selecionar-btn {
     background-color: #007bff;
@@ -737,6 +741,8 @@ header {
     padding: 8px 15px;
     border-radius: 5px;
     font-size: 0.8rem;
+    min-width: 120px;
+    touch-action: manipulation;
 }
 
 .selecionar-btn:hover {
@@ -785,6 +791,8 @@ header {
     border-radius: 5px;
     font-size: 0.9rem;
     cursor: pointer;
+    min-width: 120px;
+    touch-action: manipulation;
 }
 
 #agendamento-form .offer-btn:hover {
@@ -811,7 +819,6 @@ header {
     font-weight: bold;
 }
 
-/* Footer */
 /* Footer */
 footer {
     background-color: #222;
@@ -887,150 +894,6 @@ footer {
     transform: scale(0.9);
 }
 
-
-
-@media (max-width: 768px) {
-    .header-container {
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-        padding: 10px;
-    }
-
-    .logo-container {
-        margin-bottom: 10px;
-    }
-    .logo-container img {
-        height: 150px;
-        width: 150px;
-        border-radius: 50%;
-        border: 1px solid #ddd;
-        display: block;
-        margin-top: 10px;
-    }
-    .nav-bar ul {
-        flex-direction: column;
-        text-align: center;
-        padding: 0;
-        margin: 0;
-    }
-
-    .nav-bar li {
-        margin: 10px 0;
-    }
-
-    .search-container {
-        width: 100%;
-        text-align: center;
-        margin-bottom: 10px;
-    }
-
-    .search-input {
-        width: 90%;
-        max-width: 400px;
-    }
-
-    .social-links {
-        display: flex;
-        justify-content: center;
-        gap: 0px;
-        padding: 0px 0;
-        margin-top: 0px;
-        transform: none;
-        flex-wrap: wrap;
-    }
-
-    #info-container,
-    .info-container {
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-        padding: 10px;
-    }
-
-    .logo-perfil {
-        margin: 0 0 15px 0;
-        text-align: center;
-        width: 100%;
-    }
-
-    .info-nav ul {
-        list-style: none;
-        padding: 0;
-        margin: 15px 0 0 0;
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 10px;
-    }
-
-    .info-nav li {
-        margin: 0;
-    }
-
-    .busca-container {
-        padding: 0 10px;
-        width: 100%;
-    }
-
-    .servico-item {
-        display: grid;
-        grid-template-columns: auto 1fr auto;
-        align-items: center;
-        gap: 10px;
-        padding: 10px;
-        border-bottom: 1px solid #ddd;
-    }
-    
-    .preco-tempo {
-        text-align: left;
-        margin-left: 0;
-    }
-
-    .selecionar-btn {
-        width: 100%;
-        align-self: stretch;
-        justify-self: flex-end;
-        width: auto; /* Garante que ele fique do tamanho do conteúdo */
-    }
-
-    footer {
-        text-align: center;
-        padding: 20px;
-    }
-
-    footer img {
-        max-width: 120px;
-    }
-
-    #sobre {
-        text-align: center;
-        padding: 15px;
-    }
-
-    #produtos {
-        background-color: #f9f9f9;
-        padding: 40px 20px;
-        padding-top: 370px;
-        text-align: left;
-    }
-
-    #auth-buttons {
-        text-align: center;
-    }
-
-    #auth-buttons button {
-        background-color: transparent;
-        color: #1F8070;
-        border: 2px solid #aaa2a8;
-        padding: 10px 20px;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 1.1em;
-        transition: color 0.3s ease;
-        margin-top: 20px;
-    }
-}
 /* Estilos para a seção de pacotes */
 #pacotes {
     max-width: 960px;
@@ -1051,7 +914,7 @@ footer {
 }
 
 #pacotes h2::after {
-    content: "▲"; /* Ícone de seta para cima, consistente com outros headers */
+    content: "▲";
     font-size: 0.8rem;
     color: #777;
 }
@@ -1111,6 +974,8 @@ footer {
     cursor: pointer;
     transition: background-color 0.3s ease, transform 0.2s ease;
     align-self: flex-start;
+    min-width: 120px;
+    touch-action: manipulation;
 }
 
 .add-date-btn:hover {
@@ -1131,6 +996,8 @@ footer {
     border: none;
     cursor: pointer;
     transition: background-color 0.3s ease, transform 0.2s ease;
+    min-width: 120px;
+    touch-action: manipulation;
 }
 
 .offer-btn:hover {
@@ -1138,24 +1005,320 @@ footer {
     transform: translateY(-2px);
 }
 
-/* Estilos responsivos para dispositivos menores */
+/* Media Query para dispositivos móveis */
 @media (max-width: 768px) {
-    #pacotes {
+    body {
+        font-size: 16px;
+    }
+
+    .container {
+        padding: 0 15px;
+    }
+
+    .header-container {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 15px 10px;
+    }
+
+    .logo-container img {
+        height: 120px;
+        width: 120px;
+        margin-top: 15px;
+    }
+
+    .nav-bar ul {
+        flex-direction: column;
+        padding: 0;
+        margin: 10px 0;
+        gap: 10px;
+    }
+
+    .nav-bar li {
+        margin: 5px 0;
+    }
+
+    .nav-bar a {
+        font-size: 1rem;
+    }
+
+    .social-links {
+        justify-content: center;
+        gap: 15px;
+        margin-top: 10px;
+        flex-wrap: wrap;
+    }
+
+    .social-links img {
+        height: 28px;
+        width: 28px;
+    }
+
+    #auth-buttons {
+        flex-direction: column;
+        gap: 15px;
+        margin-top: 15px;
+    }
+
+    #auth-buttons button {
+        padding: 12px 25px;
+        font-size: 1rem;
+        width: 100%;
+        max-width: 200px;
+    }
+
+    #user-info {
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 10px;
+    }
+
+    #user-info button#logout-btn {
+        padding: 10px 20px;
+        font-size: 1rem;
+    }
+
+    .modal-content {
+        margin: 10% auto;
+        padding: 25px;
+        width: 95%;
+        max-width: 360px;
+    }
+
+    .modal h2 {
+        font-size: 1.5rem;
+    }
+
+    .modal input[type=text],
+    .modal input[type=tel],
+    .modal input[type=email],
+    .modal input[type=password] {
+        padding: 10px;
+        font-size: 1rem;
+    }
+
+    .modal button {
+        padding: 12px 15px;
+        font-size: 1rem;
+    }
+
+    .close-button {
+        font-size: 24px;
+        top: 10px;
+        right: 15px;
+    }
+
+    .modal-info {
+        width: 95%;
+        max-width: 500px;
         padding: 15px;
+    }
+
+    .modal-header h2 {
+        font-size: 1.4rem;
+    }
+
+    .btn-fechar-modal {
+        font-size: 20px;
+    }
+
+    .info-columns {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .mapa-container iframe {
+        height: 200px;
+    }
+
+    .modal-galeria {
+        width: 95%;
+        max-width: 500px;
+        padding: 15px;
+    }
+
+    .galeria-container img {
+        width: 250px;
+    }
+
+    .info-container {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 15px;
+    }
+
+    .logo-perfil {
+        margin: 0 0 20px 0;
+    }
+
+    .logo-perfil img {
+        width: 100px;
+        height: 100px;
+    }
+
+    .info-textos h1 {
+        font-size: 1.2rem;
+        transform: none;
+    }
+
+    .info-textos .endereco,
+    .info-textos .avaliacao {
+        font-size: 0.85rem;
+    }
+
+    .info-nav ul {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 15px;
+        margin: 15px 0;
+        transform: none;
+    }
+
+    .info-nav li {
+        margin: 0;
+        transform: none;
+    }
+
+    .info-nav a {
+        font-size: 0.85rem;
+    }
+
+    .search-container {
+        padding: 10px;
+    }
+
+    .search-input {
+        width: 100%;
+        font-size: 0.95rem;
+    }
+
+    .servicos-container {
+        padding: 0 15px;
+    }
+
+    .servicos-container h2 {
+        font-size: 1rem;
+    }
+
+    .servico-item {
+        padding: 10px 0;
+    }
+
+    .selecionar-checkbox {
+        width: 22px;
+        height: 22px;
+        margin-right: 10px;
+    }
+
+    .selecionar-checkbox:checked::after {
+        font-size: 14px;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    .servico-info {
+        flex-grow: 1;
+    }
+
+    .nome-servico {
+        font-size: 0.9rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .preco-tempo {
+        font-size: 0.8rem;
+        text-align: left;
+        white-space: nowrap;
+    }
+
+    .preco-tempo .tempo {
+        font-size: 0.7rem;
+        margin-left: 6px;
+    }
+
+    .whatsapp-btn {
+        padding: 12px 20px;
+        font-size: 0.9rem;
+        width: 100%;
+        max-width: 200px;
+    }
+
+    #agendamento,
+    #meus-agendamentos {
         margin: 15px;
+        padding: 15px;
+    }
+
+    #agendamento h2,
+    #meus-agendamentos h2 {
+        font-size: 1rem;
+    }
+
+    #agendamento-form select,
+    #agendamento-form input[type="datetime-local"] {
+        width: 100%;
+        font-size: 0.9rem;
+    }
+
+    #agendamento-form .offer-btn {
+        padding: 12px;
+        font-size: 0.9rem;
+        width: 100%;
+    }
+
+    #pacotes {
+        margin: 15px;
+        padding: 15px;
+    }
+
+    #pacotes h2 {
+        font-size: 1rem;
     }
 
     #pacote-form select,
     #pacote-form input[type="date"] {
         width: 100%;
+        font-size: 0.9rem;
     }
 
     .add-date-btn {
+        padding: 10px;
+        font-size: 0.85rem;
         width: 100%;
-        text-align: center;
     }
 
     .offer-btn {
+        padding: 12px;
+        font-size: 0.9rem;
         width: 100%;
+    }
+
+    footer {
+        padding: 20px 15px;
+    }
+
+    .footer-section h3 {
+        font-size: 0.95rem;
+    }
+
+    .footer-section p {
+        font-size: 0.85rem;
+    }
+
+    .footer-section img {
+        height: 25px;
+    }
+
+    #back-to-top {
+        bottom: 20px;
+        right: 20px;
+        padding: 12px;
+        font-size: 1.1rem;
     }
 }
