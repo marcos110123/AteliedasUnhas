@@ -488,3 +488,38 @@ hr {
     outline: 2px solid #3498db;
     outline-offset: 2px;
 }
+#relatorios {
+    margin-top: 20px;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+}
+
+#relatorios h2, #relatorios h3 {
+    color: #333;
+}
+
+#relatorios input[type="date"], #relatorios button {
+    margin: 5px;
+    padding: 8px;
+    border-radius: 4px;
+}
+
+#relatorios button {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+#relatorios button:hover {
+    background-color: #45a049;
+}
+
+#agendamentosPorDiaChart {
+    max-width: 100%;
+}
+/* styles2.css */
+#total-valor-servicos {
+    margin-bottom: 20px;
+}

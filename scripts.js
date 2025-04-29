@@ -1,7 +1,7 @@
 // === Firebase Imports ===
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
-import { Timestamp, getFirestore, collection, addDoc, serverTimestamp, query, where, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+import { Timestamp, getFirestore, collection, addDoc, serverTimestamp, query, where, onSnapshot, getDocs , deleteDoc , doc } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
 
 // Inicialize o EmailJS com o seu User ID
 emailjs.init("xlsoL46EksEyS0eq8"); // Substitua com o seu User ID
@@ -702,9 +702,27 @@ function exibirAgendamentos(agendamentos) {
                 <p><strong>Serviço:</strong> ${servicos}</p>
                 <p><strong>Data e Hora:</strong> ${dataFormatada}</p>
                 <p><strong>Status:</strong> ${agendamento.status}</p>
+                ${agendamento.status === 'pendente' ? `<button class="cancelar-btn" data-id="${agendamento.id}">Cancelar</button>` : ''}
                 <hr>
             `;
             listaDeAgendamentosDiv.appendChild(agendamentoDiv);
+        });
+
+        // Adicionar evento de clique aos botões de cancelamento
+        document.querySelectorAll('.cancelar-btn').forEach(botao => {
+            botao.addEventListener('click', async (event) => {
+                const agendamentoId = event.target.dataset.id;
+                if (confirm('Tem certeza de que deseja cancelar este agendamento?')) {
+                    try {
+                        const agendamentoRef = doc(db, "agendamentos", agendamentoId);
+                        await deleteDoc(agendamentoRef);
+                        alert('Agendamento cancelado com sucesso!');
+                    } catch (error) {
+                        console.error('Erro ao cancelar agendamento:', error);
+                        alert('Erro ao cancelar o agendamento. Tente novamente.');
+                    }
+                }
+            });
         });
     } else {
         listaDeAgendamentosDiv.innerHTML = '<p>Nenhum agendamento encontrado.</p>';

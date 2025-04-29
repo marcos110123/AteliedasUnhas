@@ -4,6 +4,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Painel de Administração</title>
     <link rel="stylesheet" href="styles2.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
         import {
@@ -66,6 +67,18 @@
             "PLÁSTICA DOS PÉS": 75,
             "Aplicação Unha Postiça": 75,
             "SPA DOS PÉS": 80
+        };
+
+        const precosServicos = {
+            "Manicure - Pé e Mão": 80,
+            "Manicure - Mão Simples": 35,
+            "Pé Simples": 45,
+            "ESMALTAÇÃO EM GEL C/ Cutilagem": 60,
+            "Esmaltação Mão": 40,
+            "Alongamento Speed Tip Gel": 120,
+            "PLÁSTICA DOS PÉS": 70,
+            "Aplicação Unha Postiça": 50,
+            "SPA DOS PÉS": 65
         };
 
         async function verificarRoleAdmin(user) {
@@ -238,30 +251,18 @@
                         editarDataInput.value = dataObj.toISOString().slice(0, 10);
                         editarStatusSelect.value = "pendente";
 
-                        const horaOriginal = `${dataObj.getHours().toString().padStart(2, '0')}:${dataObj.getMinutes().toString().padStart(2, '0')}`;
-
                         const agendamento = agendamentosList.find(ag => ag.id === agendamentoId);
                         let duracaoTotal = 0;
                         if (agendamento && Array.isArray(agendamento.servicos)) {
-                            agendamento.servicos.forEach(servico => {
-                                duracaoTotal += duracaoServicos[servico] || 60;
-                            });
+                            duracaoTotal = agendamento.servicos.reduce((total, servico) => {
+                                return total + (duracaoServicos[servico] || 60);
+                            }, 0);
                         } else {
-                            duracaoTotal = 60; // Default duration if no services
+                            duracaoTotal = 60; // Duração padrão
                         }
                         console.log("Duração total para edição:", duracaoTotal);
 
                         await atualizarHorariosDisponiveis(dataObj, agendamentoId, duracaoTotal, false);
-                        editarHorarioSelect.value = horaOriginal;
-
-                        if (!editarHorarioSelect.value) {
-                            const option = document.createElement("option");
-                            option.value = horaOriginal;
-                            option.textContent = horaOriginal;
-                            editarHorarioSelect.appendChild(option);
-                            editarHorarioSelect.value = horaOriginal;
-                        }
-
                         modalEdicao.style.display = "block";
                     });
                 });
@@ -338,108 +339,244 @@
             }
         }
 
+        async function isDataBloqueada(dataSelecionada) {
+            const data = new Date(dataSelecionada);
+            data.setHours(0, 0, 0, 0);
+            const dataString = data.toISOString().split('T')[0];
+
+            const bloqueiosRef = collection(db, "datas_bloqueadas");
+            const q = query(bloqueiosRef, where("data", "==", dataString));
+            const querySnapshot = await getDocs(q);
+            return !querySnapshot.empty;
+        }
+
+        async function bloquearData(dataSelecionada) {
+            try {
+                const data = new Date(dataSelecionada);
+                data.setHours(0, 0, 0, 0);
+                const dataString = data.toISOString().split('T')[0];
+
+                const agendamentosNaData = await buscarAgendamentosPorData(data);
+                if (agendamentosNaData.length > 0) {
+                    alert("Não é possível bloquear esta data, pois já existem agendamentos marcados.");
+                    return false;
+                }
+
+                if (await isDataBloqueada(data)) {
+                    alert("Esta data já está bloqueada.");
+                    return false;
+                }
+
+                await addDoc(collection(db, "datas_bloqueadas"), {
+                    data: dataString,
+                    createdAt: new Date().getTime(),
+                });
+
+                alert("Data bloqueada com sucesso!");
+                return true;
+            } catch (error) {
+                console.error("Erro ao bloquear data:", error);
+                alert("Erro ao bloquear a data.");
+                return false;
+            }
+        }
+
         function gerarHorariosDisponiveis(dataSelecionada, agendamentosNaData, agendamentoIdAtual, duracaoTotal) {
             const horariosFuncionamentoInicio = 8;
             const horariosFuncionamentoFim = 17;
             const intervaloAgendamentoMinutos = 15;
-            const horariosPossiveis = [];
-            const horariosOcupados = [];
+            const horariosDisponiveis = [];
 
-            // Generate possible time slots
+            console.log("Gerando horários disponíveis para:", dataSelecionada, "Duração:", duracaoTotal, "ID atual:", agendamentoIdAtual);
+
             for (let hora = horariosFuncionamentoInicio; hora < horariosFuncionamentoFim; hora++) {
                 for (let minuto = 0; minuto < 60; minuto += intervaloAgendamentoMinutos) {
                     const horario = `${hora.toString().padStart(2, '0')}:${minuto.toString().padStart(2, '0')}`;
-                    horariosPossiveis.push(horario);
-                }
-            }
+                    const inicioAgendamento = new Date(dataSelecionada);
+                    inicioAgendamento.setHours(hora, minuto, 0, 0);
+                    const fimAgendamento = new Date(inicioAgendamento.getTime() + duracaoTotal * 60 * 1000);
 
-            let horarioOriginal = null;
-            const agendamentoAtual = agendamentosNaData.find(ag => ag.id === agendamentoIdAtual);
-            if (agendamentoAtual) {
-                const dataOriginal = new Date(agendamentoAtual.data);
-                horarioOriginal = `${dataOriginal.getHours().toString().padStart(2, '0')}:${dataOriginal.getMinutes().toString().padStart(2, '0')}`;
-            }
-
-            // Mark occupied time slots
-            agendamentosNaData
-                .filter(agendamento => agendamento.id !== agendamentoIdAtual)
-                .forEach(agendamento => {
-                    const inicio = new Date(agendamento.data);
-                    let duracaoAgendamento = 0;
-                    if (Array.isArray(agendamento.servicos)) {
-                        agendamento.servicos.forEach(servico => {
-                            duracaoAgendamento += duracaoServicos[servico] || 60;
-                        });
-                    } else {
-                        duracaoAgendamento = 60;
+                    const horaFim = fimAgendamento.getHours() + fimAgendamento.getMinutes() / 60;
+                    if (horaFim > horariosFuncionamentoFim) {
+                        console.log(`Horário ${horario} descartado: ultrapassa horário de funcionamento (${horaFim} > ${horariosFuncionamentoFim})`);
+                        continue;
                     }
 
-                    const fim = new Date(inicio.getTime() + duracaoAgendamento * 60 * 1000);
-                    horariosOcupados.push({ inicio, fim });
-                });
+                    let horarioLivre = true;
+                    for (const agendamento of agendamentosNaData) {
+                        if (agendamento.id === agendamentoIdAtual) {
+                            console.log(`Ignorando agendamento atual ID: ${agendamentoIdAtual}`);
+                            continue;
+                        }
 
-            const horariosDisponiveis = [];
-            horariosPossiveis.forEach(horario => {
-                const [h, m] = horario.split(':').map(Number);
-                const inicioAgendamento = new Date(dataSelecionada);
-                inicioAgendamento.setHours(h, m, 0, 0);
-                const fimAgendamento = new Date(inicioAgendamento.getTime() + duracaoTotal * 60 * 1000);
+                        const inicioExistente = new Date(agendamento.data);
+                        let duracaoExistente = 0;
+                        if (Array.isArray(agendamento.servicos)) {
+                            duracaoExistente = agendamento.servicos.reduce((total, servico) => {
+                                return total + (duracaoServicos[servico] || 60);
+                            }, 0);
+                        } else {
+                            duracaoExistente = 60;
+                        }
+                        const fimExistente = new Date(inicioExistente.getTime() + duracaoExistente * 60 * 1000);
 
-                // Ensure the appointment ends within operating hours
-                const horaFim = fimAgendamento.getHours() + (fimAgendamento.getMinutes() / 60);
-                if (horaFim > horariosFuncionamentoFim) {
-                    return;
-                }
+                        if (inicioAgendamento < fimExistente && fimAgendamento > inicioExistente) {
+                            horarioLivre = false;
+                            console.log(`Conflito em ${horario}: Sobreposição com agendamento ID ${agendamento.id} (${inicioExistente.toLocaleTimeString()} - ${fimExistente.toLocaleTimeString()})`);
+                            break;
+                        }
+                    }
 
-                let horarioLivre = true;
-                for (const ocupado of horariosOcupados) {
-                    if (
-                        (inicioAgendamento < ocupado.fim && fimAgendamento > ocupado.inicio)
-                    ) {
-                        horarioLivre = false;
-                        break;
+                    if (horarioLivre) {
+                        horariosDisponiveis.push(horario);
+                        console.log(`Horário ${horario} adicionado como disponível`);
                     }
                 }
-
-                if (horarioLivre) {
-                    horariosDisponiveis.push(horario);
-                }
-            });
-
-            if (horarioOriginal && !horariosDisponiveis.includes(horarioOriginal) && agendamentoIdAtual) {
-                horariosDisponiveis.push(horarioOriginal);
-                horariosDisponiveis.sort();
             }
 
-            console.log("Horários disponíveis:", horariosDisponiveis);
             return horariosDisponiveis;
         }
 
         async function atualizarHorariosDisponiveis(dataSelecionada, agendamentoIdAtual, duracaoTotal, isNovoAgendamento = false) {
-            console.log("Atualizando horários para data:", dataSelecionada, "Duração:", duracaoTotal, "Agendamento ID:", agendamentoIdAtual);
-            let data = dataSelecionada;
-            if (typeof dataSelecionada === 'string') {
-                data = new Date(dataSelecionada);
+            console.log("Atualizando horários para:", dataSelecionada, "Duração:", duracaoTotal, "ID:", agendamentoIdAtual, "Novo:", isNovoAgendamento);
+
+            let data = dataSelecionada instanceof Date ? dataSelecionada : new Date(dataSelecionada);
+            if (isNaN(data.getTime())) {
+                console.error("Data inválida fornecida:", dataSelecionada);
+                return;
             }
+            data.setHours(0, 0, 0, 0);
+
+            if (await isDataBloqueada(data)) {
+                const horarioSelect = document.getElementById(isNovoAgendamento ? "novo-horario" : "editar-horario");
+                horarioSelect.innerHTML = '<option value="">Data bloqueada</option>';
+                horarioSelect.disabled = true;
+                console.log("Data bloqueada:", data);
+                return;
+            }
+
             const agendamentosNaData = await buscarAgendamentosPorData(data);
             const horariosDisponiveis = gerarHorariosDisponiveis(data, agendamentosNaData, agendamentoIdAtual, duracaoTotal);
 
             const horarioSelect = document.getElementById(isNovoAgendamento ? "novo-horario" : "editar-horario");
             horarioSelect.innerHTML = '<option value="">Selecione um horário</option>';
-            horariosDisponiveis.forEach(horario => {
-                const option = document.createElement("option");
-                option.value = horario;
-                option.textContent = horario;
-                horarioSelect.appendChild(option);
-            });
 
             if (horariosDisponiveis.length === 0) {
                 horarioSelect.innerHTML = '<option value="">Nenhum horário disponível</option>';
                 horarioSelect.disabled = true;
+                console.log("Nenhum horário disponível para a data selecionada");
             } else {
+                horariosDisponiveis.forEach(horario => {
+                    const option = document.createElement("option");
+                    option.value = horario;
+                    option.textContent = horario;
+                    horarioSelect.appendChild(option);
+                });
                 horarioSelect.disabled = false;
+                console.log("Horários disponíveis adicionados:", horariosDisponiveis);
             }
         }
+
+        async function gerarRelatorios(dataInicio, dataFim) {
+            const inicio = dataInicio ? new Date(dataInicio) : new Date(-8640000000000000);
+            inicio.setHours(0, 0, 0, 0);
+            const fim = dataFim ? new Date(dataFim) : new Date(8640000000000000);
+            fim.setHours(23, 59, 59, 999);
+
+            const agendamentosRef = collection(db, "agendamentos");
+            const q = query(
+                agendamentosRef,
+                where("data", ">=", inicio.toISOString()),
+                where("data", "<=", fim.toISOString())
+            );
+            const querySnapshot = await getDocs(q);
+
+            const agendamentosPorDia = {};
+            const servicosContagem = {};
+            let totalValorServicos = 0;
+
+            querySnapshot.forEach(doc => {
+                const agendamento = doc.data();
+                const data = new Date(agendamento.data);
+                const dataStr = data.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+                agendamentosPorDia[dataStr] = (agendamentosPorDia[dataStr] || 0) + 1;
+
+                if (Array.isArray(agendamento.servicos)) {
+                    agendamento.servicos.forEach(servico => {
+                        servicosContagem[servico] = (servicosContagem[servico] || 0) + 1;
+                        totalValorServicos += precosServicos[servico] || 0;
+                    });
+                }
+            });
+
+            const labels = Object.keys(agendamentosPorDia).sort((a, b) => {
+                const [dayA, monthA, yearA] = a.split('/').map(Number);
+                const [dayB, monthB, yearB] = b.split('/').map(Number);
+                return new Date(yearA, monthA - 1, dayA) - new Date(yearB, monthB - 1, dayB);
+            });
+            const dados = labels.map(label => agendamentosPorDia[label]);
+
+            const ctx = document.getElementById('agendamentosPorDiaChart').getContext('2d');
+            if (window.agendamentosChart) {
+                window.agendamentosChart.destroy();
+            }
+            window.agendamentosChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Agendamentos por Dia',
+                        data: dados,
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Número de Agendamentos'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Data'
+                            }
+                        }
+                    }
+                }
+            });
+
+            const tbody = document.querySelector('#servicosPopularesTable tbody');
+            tbody.innerHTML = '';
+            const servicosOrdenados = Object.entries(servicosContagem).sort((a, b) => b[1] - a[1]);
+            servicosOrdenados.forEach(([servico, quantidade]) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="border: 1px solid #ddd; padding: 8px;">${servico}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px;">${quantidade}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            if (servicosOrdenados.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="2" style="text-align: center; padding: 8px;">Nenhum dado encontrado.</td></tr>';
+            }
+
+            const totalDiv = document.getElementById('total-valor-servicos');
+            totalDiv.innerHTML = `<h3>Total dos Serviços: R$ ${totalValorServicos.toFixed(2)}</h3>`;
+        }
+
+        document.getElementById('gerar-relatorio-btn').addEventListener('click', async () => {
+            const dataInicio = document.getElementById('relatorio-data-inicio').value;
+            const dataFim = document.getElementById('relatorio-data-fim').value;
+            await gerarRelatorios(dataInicio, dataFim);
+        });
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
@@ -506,20 +643,33 @@
                 });
             }
 
+            const bloquearDataBtn = document.getElementById("bloquear-data-btn");
+            if (bloquearDataBtn) {
+                bloquearDataBtn.addEventListener("click", async () => {
+                    const dataBloqueio = document.getElementById("data-bloqueio").value;
+                    if (!dataBloqueio) {
+                        alert("Por favor, selecione uma data para bloquear.");
+                        return;
+                    }
+                    await bloquearData(dataBloqueio);
+                });
+            }
+
             if (editarDataInput) {
                 editarDataInput.addEventListener("change", async () => {
                     const dataSelecionada = editarDataInput.value;
                     if (dataSelecionada) {
-                        const agendamento = agendamentosList.find(ag => ag.id === editarAgendamentoIdInput.value);
+                        const agendamentoId = editarAgendamentoIdInput.value;
+                        const agendamento = agendamentosList.find(ag => ag.id === agendamentoId);
                         let duracaoTotal = 0;
                         if (agendamento && Array.isArray(agendamento.servicos)) {
-                            agendamento.servicos.forEach(servico => {
-                                duracaoTotal += duracaoServicos[servico] || 60;
-                            });
+                            duracaoTotal = agendamento.servicos.reduce((total, servico) => {
+                                return total + (duracaoServicos[servico] || 60);
+                            }, 0);
                         } else {
                             duracaoTotal = 60;
                         }
-                        await atualizarHorariosDisponiveis(dataSelecionada, editarAgendamentoIdInput.value, duracaoTotal, false);
+                        await atualizarHorariosDisponiveis(dataSelecionada, agendamentoId, duracaoTotal, false);
                     } else {
                         editarHorarioSelect.innerHTML = '<option value="">Selecione uma data primeiro</option>';
                         editarHorarioSelect.disabled = true;
@@ -539,6 +689,11 @@
                         return;
                     }
 
+                    if (await isDataBloqueada(dataSelecionada)) {
+                        alert("Não é possível editar o agendamento para uma data bloqueada.");
+                        return;
+                    }
+
                     const [hora, minuto] = horarioSelecionado.split(":").map(Number);
                     const [ano, mes, dia] = dataSelecionada.split("-").map(Number);
                     const novaData = new Date(ano, mes - 1, dia, hora, minuto, 0);
@@ -546,9 +701,9 @@
                     const agendamento = agendamentosList.find(ag => ag.id === agendamentoId);
                     let duracaoTotal = 0;
                     if (agendamento && Array.isArray(agendamento.servicos)) {
-                        agendamento.servicos.forEach(servico => {
-                            duracaoTotal += duracaoServicos[servico] || 60;
-                        });
+                        duracaoTotal = agendamento.servicos.reduce((total, servico) => {
+                            return total + (duracaoServicos[servico] || 60);
+                        }, 0);
                     } else {
                         duracaoTotal = 60;
                     }
@@ -562,9 +717,9 @@
                             const inicioExistente = new Date(agendamento.data);
                             let duracaoExistente = 0;
                             if (Array.isArray(agendamento.servicos)) {
-                                agendamento.servicos.forEach(servico => {
-                                    duracaoExistente += duracaoServicos[servico] || 60;
-                                });
+                                duracaoExistente = agendamento.servicos.reduce((total, servico) => {
+                                    return total + (duracaoServicos[servico] || 60);
+                                }, 0);
                             } else {
                                 duracaoExistente = 60;
                             }
@@ -622,6 +777,14 @@
             async function atualizarHorariosNovoAgendamento() {
                 const dataSelecionada = document.getElementById("novo-data").value;
                 if (dataSelecionada) {
+                    if (await isDataBloqueada(dataSelecionada)) {
+                        const horarioSelect = document.getElementById("novo-horario");
+                        horarioSelect.innerHTML = '<option value="">Data bloqueada</option>';
+                        horarioSelect.disabled = true;
+                        console.log("Data bloqueada para novo agendamento:", dataSelecionada);
+                        return;
+                    }
+
                     const servicosSelecionados = Array.from(
                         document.querySelectorAll(".novo-servico-checkbox:checked")
                     ).map(cb => cb.value);
@@ -631,12 +794,15 @@
                         horarioSelect.disabled = true;
                         return;
                     }
-                    let duracaoTotal = 0;
-                    servicosSelecionados.forEach(servico => {
-                        duracaoTotal += duracaoServicos[servico] || 60;
-                    });
+                    const duracaoTotal = servicosSelecionados.reduce((total, servico) => {
+                        return total + (duracaoServicos[servico] || 60);
+                    }, 0);
                     console.log("Duração total para novo agendamento:", duracaoTotal);
                     await atualizarHorariosDisponiveis(dataSelecionada, null, duracaoTotal, true);
+                } else {
+                    const horarioSelect = document.getElementById("novo-horario");
+                    horarioSelect.innerHTML = '<option value="">Selecione uma data primeiro</option>';
+                    horarioSelect.disabled = true;
                 }
             }
 
@@ -677,6 +843,11 @@
                         return;
                     }
 
+                    if (await isDataBloqueada(dataSelecionada)) {
+                        alert("Não é possível criar um agendamento para uma data bloqueada.");
+                        return;
+                    }
+
                     const [hora, minuto] = horarioSelecionado.split(":").map(Number);
                     const [ano, mes, dia] = dataSelecionada.split("-").map(Number);
                     const dataAgendamento = new Date(ano, mes - 1, dia, hora, minuto, 0);
@@ -699,9 +870,9 @@
                         const inicioExistente = new Date(agendamento.data);
                         let duracaoExistente = 0;
                         if (Array.isArray(agendamento.servicos)) {
-                            agendamento.servicos.forEach(servico => {
-                                duracaoExistente += duracaoServicos[servico] || 60;
-                            });
+                            duracaoExistente = agendamento.servicos.reduce((total, servico) => {
+                                return total + (duracaoServicos[servico] || 60);
+                            }, 0);
                         } else {
                             duracaoExistente = 60;
                         }
@@ -770,6 +941,42 @@
 <div id="admin-content" style="display: none;">
     <h1>Painel de Administração</h1>
     <button id="logout-admin-btn">Sair</button>
+
+    <h2>Bloquear Data</h2>
+    <div id="bloquear-data">
+        <label for="data-bloqueio">Selecione a data a ser bloqueada:</label>
+        <input type="date" id="data-bloqueio" />
+        <button id="bloquear-data-btn">Bloquear Data</button>
+    </div>
+    <div id="relatorios">
+        <h2>Relatórios</h2>
+        <div style="margin-bottom: 20px;">
+            <label for="relatorio-data-inicio">Data Início:</label>
+            <input type="date" id="relatorio-data-inicio" />
+            <label for="relatorio-data-fim">Data Fim:</label>
+            <input type="date" id="relatorio-data-fim" />
+            <button type="button" id="gerar-relatorio-btn">Gerar Relatório</button>
+        </div>
+        <div id="total-valor-servicos"></div>
+        <div style="display: flex; flex-wrap: wrap; gap: 20px;">
+            <div style="flex: 1; min-width: 300px;">
+                <h3>Agendamentos por Dia</h3>
+                <canvas id="agendamentosPorDiaChart" width="400" height="200"></canvas>
+            </div>
+            <div style="flex: 1; min-width: 300px;">
+                <h3>Serviços Mais Populares</h3>
+                <table id="servicosPopularesTable" style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr>
+                            <th style="border: 1px solid #ddd; padding: 8px;">Serviço</th>
+                            <th style="border: 1px solid #ddd; padding: 8px;">Quantidade</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 
     <h2>Lista de Agendamentos</h2>
     <div id="filtro-agendamentos">
@@ -874,5 +1081,6 @@
     <p>Você não tem permissão para acessar esta página.</p>
     <p><a href="/index.html">Voltar para a página inicial</a></p>
 </div>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9336fd5789b1c00b',t:'MTc0NTE3NjcyOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'93370d446b0653ee',t:'MTc0NTE3NzM4MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9380e95bdbd553df',t:'MTc0NTk1MTg1Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+</body>
 </html>
